@@ -1,13 +1,88 @@
 # Planify | Creative Daily Planner & Dev/Study AI Assistant
 
-A modern, high-velocity daily planning and to-do application inspired by Adobe's creative visual aesthetics (Adobe Spectrum `#EB1000` crimson palette, fluid dark/light modes, micro-interactions). Built with **React 18**, **Spring Boot 3**, **PostgreSQL 16 / H2**, and integrated with a local **Qwen 3 (1.7B)** AI engine, curated programming summaries, and suggested reference links to **GeeksforGeeks**, **W3Schools**, and **TPointTech**.
+A full-stack AI to-do and study planner built with **React 18, Spring Boot 3, PostgreSQL 16, Ollama, and Qwen3 1.7B**. With the recommended Docker setup, the **app, database, and AI model server start together**. No separately installed Qwen model or local \`E:\model\` folder is required.
+
+## 🚀 Quick Start — clone and run with Docker (recommended)
+
+**Requirements:** Git, Docker Desktop (Windows/macOS) or Docker Engine + Docker Compose (Linux), an internet connection for the first setup, and enough disk space/RAM for the app and model. You do **not** need Java, Node.js, Python, Maven, Ollama, or Qwen installed on your host computer.
+
+### Windows — PowerShell
+
+Run these commands in **PowerShell** in the folder where you want to clone the project:
+
+\`\`\`powershell
+git clone --branch mothini https://github.com/Mohan97babu/AI-TodoApp.git
+cd AI-TodoApp
+.\start-docker.ps1
+\`\`\`
+
+Open **http://localhost:5174** after the services have started. Keep Docker Desktop running.
+
+### Linux / macOS — terminal
+
+\`\`\`bash
+git clone --branch mothini https://github.com/Mohan97babu/AI-TodoApp.git
+cd AI-TodoApp
+sh ./start-docker.sh
+\`\`\`
+
+Open **http://localhost:5174**.
+
+### What starts automatically?
+
+| Container | Purpose | Accessible from host |
+|---|---|---|
+| \`frontend\` | React production build served by Nginx | \`http://localhost:5174\` |
+| \`backend\` | Spring Boot REST API and authenticated AI integration | \`http://localhost:8082\` (loopback only) |
+| \`postgres\` | Persistent tasks and user data | \`127.0.0.1:5433\` |
+| \`ollama\` | Private local AI inference service | Docker internal network only |
+| \`ollama-init\` | Downloads Qwen3 on first run (and ensures it is present) | Not exposed |
+
+The startup scripts create a local \`.env\` with randomly generated **database password** and **JWT secret** if it does not already exist. Existing \`.env\` files are preserved. If an existing file has \`CHANGE_ME\` values for \`DB_PASSWORD\` or \`JWT_SECRET\`, replace those values before starting. Keep \`.env\` out of Git.
+
+### Model installation: automatic and cached
+
+Docker uses Ollama's **\`qwen3:1.7b\`** (approximately **1.4 GB** in the default quantization). The \`ollama-init\` container pulls the model automatically. The weights are **not part of the Git repository** and are **not** taken from the original developer's computer.
+
+- **First run:** Docker downloads the Ollama image(s) and Qwen model. Startup will take longer and requires internet access.
+- **Later runs:** Previously downloaded weights are reused from the **\`ollama_data\` Docker volume**. No manual model installation is required.
+- **Different computer:** Each computer downloads its own copy automatically on its first startup.
+- **Your original GGUF:** The separate \`E:\model\qwen3-1.7b\Qwen3-1.7B-Q6_K.gguf\` is **not** copied into the image. The default Docker model is a different quantization of Qwen3 1.7B.
+
+**Check model download and status:**
+
+\`\`\`powershell
+docker compose ps
+docker compose logs -f ollama-init
+docker compose exec ollama ollama list
+docker compose logs --tail 100 backend
+\`\`\`
+
+**Stop and start again without deleting data/model weights:**
+
+\`\`\`powershell
+docker compose down
+docker compose up -d
+\`\`\`
+
+**Do not use \`docker compose down -v\`** unless you intentionally want to delete **both** PostgreSQL data and cached model weights.
+
+### Optional NVIDIA GPU acceleration
+
+The default configuration supports **CPU inference** (slower but no NVIDIA GPU required). On a system with properly configured NVIDIA GPU access for Docker:
+
+\`\`\`powershell
+docker compose -f docker-compose.yml -f docker-compose.gpu.yml up --build -d
+\`\`\`
+
+GPU support depends on the host drivers, Docker runtime and hardware. The model is not publicly exposed: the Spring Boot backend calls \`http://ollama:11434/v1/chat/completions\` on the private Compose network.
 
 ---
 
 ## 🌟 Key Features
 
 ### 1. 🤖 Local Qwen 3 (1.7B) AI Dev & Study Assistant
-- **Docker self-contained AI**: Compose starts Ollama and automatically downloads `qwen3:1.7b` (~1.4 GB, Q4_K_M) into a persistent Docker volume on first use. Other computers **do not** need your `E:\model` folder or a separate local Qwen installation.
+- **Docker-managed AI**: Compose starts Ollama and automatically downloads `qwen3:1.7b` (~1.4 GB, Q4_K_M) into a persistent Docker volume on first use. Other computers **do not** need your `E:\model` folder or a separate local Qwen installation.
 - **Optional native Windows gateway**: `start.ps1` can still serve your own `E:\model\qwen3-1.7b\Qwen3-1.7B-Q6_K.gguf` using `E:\model\run_server.py`. This Q6_K file is **not** the same as the Ollama Q4_K_M default.
 - **API security**: Browser access to chat uses JWT-protected Spring Boot endpoints. The Docker-internal Ollama API **does not authenticate its own requests**; it is not published to the host or internet. An optional standalone model gateway can enforce its own key.
 - **Learning References**: A small local catalog of programming summaries with suggested links to three external tutorial sites (not live website ingestion):
@@ -15,7 +90,7 @@ A modern, high-velocity daily planning and to-do application inspired by Adobe's
   - 🟢 **W3Schools** (`https://www.w3schools.com/`): Web technologies, HTML5, CSS3 Flexbox/Grid, JavaScript, React.
   - 🟠 **TPointTech** (`https://www.tpointtech.com/`): Java core, Spring Boot, OOPs, design patterns, microservices.
 - **Reference Toggles**: Choose which tutorial sites appear as suggested links in the drawer. These switches do not fetch site content.
-- **Model Reasoning Display**: Collapsible chain-of-thought drawer to inspect Qwen 3's step-by-step thinking.
+- **AI Response Details**: Collapsible model reasoning when a compatible model supplies it; the Docker Qwen configuration requests concise, non-thinking responses.
 - **1-Click "Add to To-Dos"**: Convert any suggested coding exercise, drill, or practice step directly into your daily planner with a single click.
 
 ### 2. 📅 AI Study Plan Architect
@@ -66,7 +141,7 @@ A modern, high-velocity daily planning and to-do application inspired by Adobe's
 │   └── apache-maven-3.9.6/      # Portable Maven runtime
 ├── start.bat                    # 1-Click launcher (Model + Backend + Frontend)
 ├── start.ps1                    # PowerShell 1-Click launcher
-├── docker-compose.yml           # PostgreSQL, Backend, Frontend, Ollama + model init
+├── docker-compose.yml           # Production app stack: DB, API, UI, Ollama + model pull
 ├── docker-compose.gpu.yml       # Optional NVIDIA acceleration
 ├── docker-compose.ci.yml        # CI mock model (not for real users)
 ├── start-docker.ps1             # Docker one-command Windows setup
@@ -75,88 +150,49 @@ A modern, high-velocity daily planning and to-do application inspired by Adobe's
 
 ---
 
-## Run the application — commands and where to run them
+## 🛠️ Advanced: run without Docker (optional)
 
-> **Windows paths used below:** application at `F:\AI-TodoApp`. The optional *non-Docker* model gateway is at `E:\model`. **Docker mode does not use your E: drive.** Frontend: `5174`, Spring Boot API: `8082`; Docker Ollama runs only inside the private Compose network at `ollama:11434`. Choose **either** native development or Docker, not both on the same application ports.
+This is an alternative **development mode**, not required for anyone using the Docker Quick Start above. It runs the React frontend, Spring Boot backend (H2 in-memory development database) and **your own separately installed** model gateway on Windows.
 
-### 1. Get the latest `mothini` code — Windows PowerShell
+**Requirements for this option only:** Java 17+, Maven, Node.js/npm, Python and any dependencies required by your own Qwen gateway. The \`start.ps1\` launcher looks for a gateway script at \`E:\model\run_server.py\`.
 
-If you already cloned the repository:
+**1. Clone or update the branch:**
 
-~~~powershell
-cd F:\AI-TodoApp
-git fetch origin
-git switch mothini
-git pull --ff-only origin mothini
-~~~
+\`\`\`powershell
+git clone --branch mothini https://github.com/Mohan97babu/AI-TodoApp.git
+cd AI-TodoApp
+\`\`\`
 
-If you **have not** cloned it (run in PowerShell from any directory; `F:\AI-TodoApp` must not already exist):
+If you already cloned it, use \`git switch mothini\` and \`git pull origin mothini\` instead.
 
-~~~powershell
-git clone --branch mothini https://github.com/Mohan97babu/AI-TodoApp.git F:\AI-TodoApp
-cd F:\AI-TodoApp
-~~~
+**2. Configure the local environment:**
 
-### 2. Configure environment variables for **native Windows mode** (skip for Docker)
-
-**If you use Docker, skip this step and go straight to 3B.** `start-docker.ps1` or `start-docker.sh` automatically creates `.env` with random database/JWT secrets, and Ollama installs the model automatically. For standalone Windows development, use PowerShell:
-
-~~~powershell
-cd F:\AI-TodoApp
+\`\`\`powershell
 Copy-Item .env.example .env
 notepad .env
-~~~
+\`\`\`
 
-In `.env`, replace the `CHANGE_ME` passwords and JWT secret with unique values. For **standalone Windows** mode, set `OPENAI_API_KEY` to the key for your own local model gateway, `OPENAI_API_URL=http://localhost:8000/v1/chat/completions`, and `OPENAI_MODEL=qwen3-1.7b`. Keep `.env` private. Docker mode ignores the standalone model key and URL and uses its own internal Ollama service.
+Replace \`DB_PASSWORD\` and \`JWT_SECRET\` with unique strong values. For the **standalone gateway only**, configure \`OPENAI_API_KEY\`, \`OPENAI_API_URL=http://localhost:8000/v1/chat/completions\`, and \`OPENAI_MODEL=qwen3-1.7b\` according to your gateway.
 
-To generate a random JWT signing secret in PowerShell and paste the output into the `JWT_SECRET` value in `.env`:
+**3. Start the local launcher:**
 
-~~~powershell
-$bytes = New-Object byte[] 48
-[System.Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($bytes)
-[Convert]::ToBase64String($bytes)
-~~~
-
-Do not put the model file path (`E:\model\qwen3-1.7b`) into `OPENAI_API_URL`: the standalone backend uses an HTTP endpoint. Docker mode connects automatically to `http://ollama:11434/v1/chat/completions` and does **not** require any `OPENAI_API_KEY` to access Ollama.
-
-### 3A. Easiest local development — Windows (H2 database)
-
-**Prerequisites:** Java 17+, Maven 3.8+, Node.js 22/npm, Python and the installed dependencies of your existing model gateway. Docker is **not** needed for this option. From **PowerShell**:
-
-~~~powershell
-cd F:\AI-TodoApp
+\`\`\`powershell
 .\start.ps1
-~~~
+\`\`\`
 
-Or from **Command Prompt (CMD)**:
+Or in Command Prompt: \`start.bat\`. The launcher opens separate terminal windows for the backend/frontend and tries to launch the model gateway if present. Open \`http://localhost:5174\`. This mode uses an H2 **in-memory database**, so application data does not survive a backend restart.
 
-~~~bat
-cd /d F:\AI-TodoApp
-start.bat
-~~~
+For manual setup, use **three separate PowerShell terminals**:
 
-The launcher reads `.env`, starts the backend and frontend in separate windows, and tries to start `E:\model\run_server.py` when that file exists. To check the model and gateway paths in PowerShell:
-
-~~~powershell
-Test-Path 'E:\model\run_server.py'
-Test-Path 'E:\model\qwen3-1.7b\Qwen3-1.7B-Q6_K.gguf'
-~~~
-
-For this option, Spring Boot uses **H2 in-memory development storage**: tasks do **not** survive a full backend restart. The launcher opens process windows; check their logs if a service fails. Open `http://localhost:5174/` in your browser.
-
-#### Start services manually (three PowerShell terminals, alternative to the launcher)
-
-**Terminal 1 — local model gateway** (only if you have `E:\model\run_server.py`):
-
-~~~powershell
+\`\`\`powershell
+# Terminal 1 — OPTIONAL: only when E:\model\run_server.py exists
 cd E:\model
 python run_server.py --host 127.0.0.1 --port 8000 --no-browser
-~~~
+\`\`\`
 
-**Terminal 2 — Spring Boot backend.** The manual backend process does **not** load `.env` automatically, so import it into this PowerShell session first:
-
-~~~powershell
-cd F:\AI-TodoApp
+\`\`\`powershell
+# Terminal 2 — backend; read .env into this process first
+cd <your-repo-folder>
 Get-Content .env | ForEach-Object {
   if ($_ -match '^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)$') {
     [Environment]::SetEnvironmentVariable($Matches[1], $Matches[2].Trim().Trim('"').Trim("'"), 'Process')
@@ -165,84 +201,24 @@ Get-Content .env | ForEach-Object {
 $env:OPENAI_API_URL = 'http://localhost:8000/v1/chat/completions'
 cd backend
 mvn spring-boot:run "-Dspring-boot.run.profiles=h2"
-~~~
+\`\`\`
 
-**Terminal 3 — React frontend:**
-
-~~~powershell
-cd F:\AI-TodoApp\frontend
+\`\`\`powershell
+# Terminal 3 — frontend
+cd <your-repo-folder>\frontend
 npm ci
 npm run dev
-~~~
+\`\`\`
 
-Visit `http://localhost:5174/`. The development Vite server forwards `/api` requests to `http://localhost:8082`.
+The PowerShell commands above use \`<your-repo-folder>\` as a placeholder for your actual cloned repository path. For example, use \`F:\AI-TodoApp\`. Run native and Docker modes separately to avoid port conflicts.
 
-### 3B. Docker deployment — all services plus Qwen3 (recommended)
+---
 
-**Prerequisite: Docker Desktop** on Windows/macOS or Docker Engine + Compose on Linux. You do **not** need Python, Java, npm, Ollama or a model file installed on your computer. The default Ollama inference works on **CPU** (can be slow). First startup downloads model weights **once within Docker**; later launches reuse the `ollama_data` volume.
+## ✅ Test before pushing or deploying
 
-**New user, Windows PowerShell** (after cloning the repository):
+For contributors with Node.js and Java/Maven installed locally, run these commands in PowerShell (Docker-only users can skip them):
 
-~~~powershell
-cd F:\AI-TodoApp
-.\start-docker.ps1
-~~~
-
-This creates `.env` with random strong secrets (if one does not exist), validates the Docker configuration, builds the frontend/backend containers, starts PostgreSQL + Ollama, downloads Qwen automatically and then starts Spring Boot.
-
-**New user, macOS/Linux terminal** (after cloning the repository):
-
-~~~bash
-cd AI-TodoApp
-sh ./start-docker.sh
-~~~
-
-**Already configured `.env`?** You can use Docker directly from the project root:
-
-~~~powershell
-docker compose up --build -d
-docker compose ps
-~~~
-
-**View model download progress and check the installed model:**
-
-~~~powershell
-docker compose logs -f ollama-init
-docker compose exec ollama ollama list
-docker compose logs --tail 100 backend
-~~~
-
-The model is **qwen3:1.7b**, approximately **1.4 GB** in Ollama's `Q4_K_M` quantization. It is not a copy of your custom Q6_K GGUF file. Models are pulled over the internet on first use, not committed to GitHub. Updates or changing `OLLAMA_MODEL` in `.env` may download new weights. Users need enough free disk space, RAM, and an internet connection **for the first run**.
-
-**Open your app:**
-
-~~~powershell
-Start-Process 'http://localhost:5174/'
-curl.exe http://localhost:8082/actuator/health
-~~~
-
-**Optional NVIDIA GPU acceleration** (requires compatible GPU, drivers, and NVIDIA container runtime support):
-
-~~~powershell
-docker compose -f docker-compose.yml -f docker-compose.gpu.yml up --build -d
-~~~
-
-The CPU-only Compose works without an NVIDIA GPU. On other GPU types, verify Docker pass-through support before enabling acceleration.
-
-**Stop and restart while keeping PostgreSQL data and model cache:**
-
-~~~powershell
-docker compose down
-docker compose up -d
-~~~
-
-**Never run `docker compose down -v` unless you intentionally want to delete *both* database data and cached model weights.** The model is stored in Docker's named `ollama_data` volume, not a Windows `E:\model` folder. Ollama's port 11434 is **not exposed publicly**. The application connects over Compose networking.
-
-If your project folder already has a `.env` from an older version, `start-docker.ps1` will preserve it. Replace any `CHANGE_ME` values for `DB_PASSWORD` and `JWT_SECRET`. The previous standalone gateway settings are not used by the Docker backend. To choose a different Ollama tag, set `OLLAMA_MODEL` in `.env`.
-
-### 4. Test before pushing or deploying
-
-Run **frontend tests and production build** from Windows PowerShell:
+**Frontend tests and production build:**
 
 ~~~powershell
 cd F:\AI-TodoApp\frontend
@@ -251,45 +227,46 @@ npm test
 npm run build
 ~~~
 
-Run **Spring Boot verification** from another PowerShell terminal:
+**Spring Boot verification:**
 
 ~~~powershell
 cd F:\AI-TodoApp\backend
 mvn -B -ntp verify
 ~~~
 
-GitHub Actions builds the application with `docker-compose.ci.yml`, which uses a **simulated** Ollama-compatible API to validate chatbot routing without downloading 1.4 GB of weights on every push. CI also tests API health, authentication, task CRUD, and user isolation. Real Qwen generation must additionally be tested on a machine running the normal `docker-compose.yml`.
+GitHub Actions builds the application with `docker-compose.ci.yml`, which uses a **simulated** Ollama-compatible API to validate chatbot routing without downloading the real model weights on every push. CI also tests API health, authentication, task CRUD, and user isolation. Real Qwen generation must additionally be tested on a machine running the normal `docker-compose.yml`.
 
-### 5. Troubleshooting commands
+## 🧰 Troubleshooting
 
-~~~powershell
-# From F:\AI-TodoApp — container status and errors
+Run in PowerShell from the cloned project directory:
+
+\`\`\`powershell
+# Container status and logs
 docker compose ps
 docker compose logs --tail 150 backend
 docker compose logs --tail 100 postgres
 docker compose logs --tail 100 frontend
+docker compose logs --tail 120 ollama-init
+docker compose logs --tail 120 ollama
 
-# Confirm the API is responding
+# Check backend / model cache
 curl.exe -i http://localhost:8082/actuator/health
+docker compose exec ollama ollama list
+\`\`\`
 
-# Confirm Java, Maven and Node.js are installed
+**For the optional non-Docker Windows development mode only:**
+
+\`\`\`powershell
 java -version
 mvn -version
 node --version
 npm --version
-
-# Docker Qwen model pull and installed models
-docker compose logs --tail 120 ollama-init
-docker compose exec ollama ollama list
-
-# Optional non-Docker Windows gateway only
 Test-Path 'E:\model\run_server.py'
-Test-Path 'E:\model\qwen3-1.7b\Qwen3-1.7B-Q6_K.gguf'
-~~~
+\`\`\`
 
-If Docker cannot start, verify Docker Desktop is running, `DB_PASSWORD`/`JWT_SECRET` are configured, and ports 5174/8082/5433 are free. If Qwen shows offline, inspect `docker compose logs ollama-init` and `docker compose logs ollama`. Use `docker compose exec ollama ollama list` to verify the model is present. Port 8000 only applies to the **optional native Windows gateway**, not Docker.
+**Common issues:** If Docker cannot start, check that Docker Desktop/Engine is running, your `.env` has valid `DB_PASSWORD` and `JWT_SECRET`, and ports 5174/8082/5433 are free. If the app starts but the AI is unavailable, check `docker compose logs ollama-init` for first-run download errors and `docker compose exec ollama ollama list` for `qwen3:1.7b`. CPU inference may be slow. Port 8000 applies only to the optional **non-Docker** model gateway.
 
-### 6. Git commands to commit future updates — PowerShell
+## 🔀 Git commands to commit future updates — PowerShell
 
 ~~~powershell
 cd F:\AI-TodoApp
@@ -300,9 +277,9 @@ git commit -m "Describe your changes"
 git push origin mothini
 ~~~
 
-Only run `git commit` when you have local changes to save. The `.env` file is ignored by Git; double-check staged files with `git diff --cached --name-only` before pushing.
+Run these commands from the project folder. Only run `git commit` when you have local changes to save. The `.env` file is ignored by Git; double-check staged files with `git diff --cached --name-only` before pushing.
 
-### Production release notes
+## 🔒 Production release notes
 
 - Keep JWT, database, and any **standalone** gateway secrets in environment configuration. Docker's built-in Ollama service has **no API authentication** and must stay network-private. **Rotate credentials that appeared in earlier commits**: removing them from the latest source does not remove them from Git history.
 - Use HTTPS/TLS in front of Nginx for public access. Configure firewall rules, monitoring, database backups, disaster recovery, and migrations.

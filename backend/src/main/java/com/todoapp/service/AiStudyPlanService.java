@@ -111,6 +111,9 @@ public class AiStudyPlanService {
         Map<String, Object> body = new HashMap<>();
         body.put("model", model);
         body.put("response_format", Map.of("type", "json_object"));
+        if (apiUrl.contains("ollama:11434")) {
+            body.put("reasoning_effort", "none");
+        }
 
         List<Map<String, String>> messages = new ArrayList<>();
         messages.add(Map.of("role", "system", "content", systemPrompt));

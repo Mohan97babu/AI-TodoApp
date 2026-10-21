@@ -19,7 +19,7 @@ export function AiDevChatbotDrawer({ isOpen, onClose, onAddTask }) {
       {
         id: 'welcome',
         role: 'assistant',
-        content: `👋 **Welcome to Planify Dev & Study Assistant!**\n\nI am powered by your local **Qwen 3 (1.7B)** AI model and integrated with official knowledge from **GeeksforGeeks**, **W3Schools**, and **TPointTech**.\n\nAsk me anything about:\n- 🚀 **Algorithms & Data Structures** (Binary Search, Trees, DP)\n- 💻 **Web Engineering** (CSS Flexbox/Grid, React Hooks, JavaScript)\n- ⚙️ **Backend Architecture** (Spring Boot, REST APIs, Java Collections)\n- 🗄️ **Databases & DevOps** (SQL Joins, Docker, JWT Security)\n\nYou can also click **"+ Add to To-Dos"** on any recommended exercise to instantly schedule it into your planner!`,
+        content: `👋 **Welcome to Planify Dev & Study Assistant!**\n\nI can answer using your **Qwen 3 (1.7B)** model and a small built-in programming reference catalog. Related links to **GeeksforGeeks**, **W3Schools**, and **TPointTech** are suggestions, not live-verified webpage results.\n\nAsk me anything about:\n- 🚀 **Algorithms & Data Structures** (Binary Search, Trees, DP)\n- 💻 **Web Engineering** (CSS Flexbox/Grid, React Hooks, JavaScript)\n- ⚙️ **Backend Architecture** (Spring Boot, REST APIs, Java Collections)\n- 🗄️ **Databases & DevOps** (SQL Joins, Docker, JWT Security)\n\nYou can also click **"+ Add to To-Dos"** on any recommended exercise to instantly schedule it into your planner!`,
         sources: [
           { site: 'GeeksforGeeks', title: 'GeeksforGeeks Portal', url: 'https://www.geeksforgeeks.org/' },
           { site: 'W3Schools', title: 'W3Schools Tutorials', url: 'https://www.w3schools.com/' },
@@ -272,9 +272,9 @@ export function AiDevChatbotDrawer({ isOpen, onClose, onAddTask }) {
                   display: 'inline-block',
                 }} />
                 <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-                  {modelStatus?.connected
+                  {modelStatus === null ? 'Checking local model…' : modelStatus.connected
                     ? `Local Qwen 3 (1.7B) • ${modelStatus.latencyMs ? modelStatus.latencyMs + 'ms' : 'Ready'}`
-                    : 'Local model offline — answers may be limited'}
+                    : 'Local model offline — using saved topic notes'}
                 </span>
                 <button
                   onClick={checkStatus}
@@ -321,7 +321,7 @@ export function AiDevChatbotDrawer({ isOpen, onClose, onAddTask }) {
         }}>
           <span style={{ color: 'var(--text-secondary)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
             <Globe size={13} />
-            Grounding Sources:
+            Reference sites:
           </span>
 
           {/* GeeksforGeeks Toggle */}
@@ -505,7 +505,7 @@ export function AiDevChatbotDrawer({ isOpen, onClose, onAddTask }) {
                     gap: '5px',
                   }}>
                     <BookOpen size={13} />
-                    Related Learning Sources:
+                    Suggested reading (not live-verified):
                   </div>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
                     {msg.sources.map((src, sIdx) => {
@@ -753,7 +753,7 @@ export function AiDevChatbotDrawer({ isOpen, onClose, onAddTask }) {
             color: 'var(--text-secondary)',
             textAlign: 'center',
           }}>
-            Powered by local Qwen 3 (1.7B) • Grounded in GeeksforGeeks, W3Schools & TPointTech
+            Qwen 3 (1.7B) when connected • Curated offline notes & suggested references
           </div>
         </form>
       </div>

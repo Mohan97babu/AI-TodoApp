@@ -1,0 +1,20 @@
+# CI only: replace real Ollama with a fake OpenAI-compatible server.
+# Production uses docker-compose.yml alone and pulls the actual model.
+services:
+  ollama:
+    image: python:3.12-alpine
+    entrypoint: ["python", "-u", "/opt/mock_ollama.py"]
+    command: []
+    volumes:
+      - ./scripts/mock_ollama.py:/opt/mock_ollama.py:ro
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:11434/v1/models', timeout=3)"]
+      interval: 3s
+      timeout: 5s
+      retries: 15
+      start_period: 2s
+
+  ollama-init:
+    image: python:3.12-alpine
+    entrypoint: ["python", "-c", "print('CI: model setup simulated; no weights downloaded')"]
+    command: []

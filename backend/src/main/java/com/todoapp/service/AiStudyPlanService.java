@@ -19,6 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 
 import java.math.BigDecimal;
 import java.util.*;
@@ -46,7 +47,10 @@ public class AiStudyPlanService {
         this.studyPlanRepository = studyPlanRepository;
         this.userRepository = userRepository;
         this.objectMapper = new ObjectMapper();
-        this.restTemplate = new RestTemplate();
+        SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
+        requestFactory.setConnectTimeout(4000);
+        requestFactory.setReadTimeout(120000);
+        this.restTemplate = new RestTemplate(requestFactory);
     }
 
     @Transactional

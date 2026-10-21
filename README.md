@@ -7,7 +7,7 @@ A modern, high-velocity daily planning and to-do application inspired by Adobe's
 ## 🌟 Key Features
 
 ### 1. 🤖 Local Qwen 3 (1.7B) AI Dev & Study Assistant
-- **Local Model Serving**: Direct GGUF inference serving `E:\model\qwen3-1.7b\Qwen3-1.7B-Q6_K.gguf` on `http://localhost:8000/v1` with Vulkan/CUDA GPU acceleration (>100 tokens/sec).
+- **Local Model Serving**: Direct GGUF inference serving `E:\model\qwen3-1.7b\Qwen3-1.7B-Q6_K.gguf` on `http://localhost:8000/v1` with hardware acceleration where supported.
 - **API Key Security**: Fully authenticated OpenAI-compatible API Gateway secured with `sk-mdl-...` keys generated via `key_store.py`.
 - **Knowledge Grounding Engine**: Real-time integration with 3 leading developer and computer science platforms:
   - 🟢 **GeeksforGeeks** (`https://www.geeksforgeeks.org/`): Data structures, algorithms, coding problems, interview roadmaps.
@@ -117,7 +117,7 @@ Frontend will be live on `http://localhost:5174`.
 | **Model Path** | `E:\model\qwen3-1.7b\Qwen3-1.7B-Q6_K.gguf` |
 | **Model ID** | `qwen3-1.7b` |
 | **Gateway Base URL** | `http://localhost:8000/v1` |
-| **Planify API Key** | `sk-mdl-Axh6jn1UzhEss0ERIrAwRAuypUsgb1CmuQW_gaWZLBc` |
+| **Planify API Key** | `[SET_IN_ENV]` |
 | **Grounding Sources** | GeeksforGeeks, W3Schools, TPointTech |
 
 ---
@@ -131,3 +131,15 @@ docker compose up --build -d
 - Frontend: `http://localhost:5174`
 - Backend: `http://localhost:8082`
 - PostgreSQL: `localhost:5433` (Database: `tododb`)
+
+
+## Production configuration (required)
+
+1. Copy `.env.example` to `.env`, replace every placeholder with unique strong secrets, and keep `.env` out of Git.
+2. Rotate any model API key and JWT signing secret that were previously committed. Changing the JWT secret invalidates existing sessions.
+3. Run `docker compose up --build -d` and check `docker compose ps` and `http://localhost:5174/`.
+4. Production frontend is served by Nginx with `/api` forwarded to Spring Boot; expose TLS using your chosen reverse proxy/load balancer.
+5. Qwen runs on the host, not inside Compose; configure `OPENAI_API_URL` to reach your actual model gateway from the backend container. Protect the model gateway with a firewall and key.
+6. API chat and study planning require login; model status and health remain public.
+
+Run `cd frontend && npm ci && npm run build` and `cd backend && mvn -B test package` before release.

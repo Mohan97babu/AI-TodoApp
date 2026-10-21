@@ -62,7 +62,7 @@ export function TaskCard({ task, onToggleStatus, onEdit, onDelete }) {
         boxShadow: 'var(--shadow-sm)',
         transition: 'var(--transition)',
         position: 'relative',
-        opacity: isCompleted ? 0.65 : 1,
+        opacity: isCompleted ? 0.85 : 1,
       }}
 
     >

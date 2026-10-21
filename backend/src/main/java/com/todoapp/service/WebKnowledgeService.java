@@ -272,7 +272,7 @@ public class WebKnowledgeService {
             if (enableTpoint) {
                 sources.add(Map.of("site", "TPointTech", "title", "Search '" + query + "' on TPointTech", "url", "https://www.tpointtech.com/search?q=" + encodedQuery));
             }
-            contextBuilder.append("Query relates to software engineering, computer science, and practical development best practices.\n");
+            // No fabricated summary when the local catalog has no matching topic.
         }
 
         Map<String, Object> result = new HashMap<>();

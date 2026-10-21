@@ -1,6 +1,6 @@
 # Planify | Creative Daily Planner & Dev/Study AI Assistant
 
-A modern, high-velocity daily planning and to-do application inspired by Adobe's creative visual aesthetics (Adobe Spectrum `#EB1000` crimson palette, fluid dark/light modes, micro-interactions). Built with **React 18**, **Spring Boot 3**, **PostgreSQL 16 / H2**, and powered by a local **Qwen 3 (1.7B)** AI engine grounded in official knowledge from **GeeksforGeeks**, **W3Schools**, and **TPointTech**.
+A modern, high-velocity daily planning and to-do application inspired by Adobe's creative visual aesthetics (Adobe Spectrum `#EB1000` crimson palette, fluid dark/light modes, micro-interactions). Built with **React 18**, **Spring Boot 3**, **PostgreSQL 16 / H2**, and integrated with a local **Qwen 3 (1.7B)** AI engine, curated programming summaries, and suggested reference links to **GeeksforGeeks**, **W3Schools**, and **TPointTech**.
 
 ---
 
@@ -9,11 +9,11 @@ A modern, high-velocity daily planning and to-do application inspired by Adobe's
 ### 1. 🤖 Local Qwen 3 (1.7B) AI Dev & Study Assistant
 - **Local Model Serving**: Direct GGUF inference serving `E:\model\qwen3-1.7b\Qwen3-1.7B-Q6_K.gguf` on `http://localhost:8000/v1` with hardware acceleration where supported.
 - **API Key Security**: Fully authenticated OpenAI-compatible API Gateway secured with `sk-mdl-...` keys generated via `key_store.py`.
-- **Knowledge Grounding Engine**: Real-time integration with 3 leading developer and computer science platforms:
+- **Learning References**: A small local catalog of programming summaries with suggested links to three external tutorial sites (not live website ingestion):
   - 🟢 **GeeksforGeeks** (`https://www.geeksforgeeks.org/`): Data structures, algorithms, coding problems, interview roadmaps.
   - 🟢 **W3Schools** (`https://www.w3schools.com/`): Web technologies, HTML5, CSS3 Flexbox/Grid, JavaScript, React.
   - 🟠 **TPointTech** (`https://www.tpointtech.com/`): Java core, Spring Boot, OOPs, design patterns, microservices.
-- **Source Toggles**: Interactively enable or disable specific grounding sources in the drawer.
+- **Reference Toggles**: Choose which tutorial sites appear as suggested links in the drawer. These switches do not fetch site content.
 - **Model Reasoning Display**: Collapsible chain-of-thought drawer to inspect Qwen 3's step-by-step thinking.
 - **1-Click "Add to To-Dos"**: Convert any suggested coding exercise, drill, or practice step directly into your daily planner with a single click.
 
@@ -148,3 +148,9 @@ Run `cd frontend && npm ci && npm run build` and `cd backend && mvn -B test pack
 **Existing PostgreSQL volumes:** Changing `DB_USER` or `DB_PASSWORD` in Compose does not update credentials inside an already-initialized database. Back up data and migrate credentials before switching an existing deployment; do not delete production volumes just to reset a password.
 
 **Release gate:** CI runs React tests/build, Maven verification, configuration/secret scans, and a Docker smoke test. HTTPS, backups, database migrations, monitoring, and access policies must still be configured for a public production environment. Never expose the model gateway directly to the internet.
+
+## Documentation integrity and remaining launch requirements
+
+The Qwen integration currently uses built-in curated topic summaries and suggested URLs, **not** continuously synchronized content from third-party tutorial sites. The app does not confirm each linked page is current or even available. Do not market those responses as verified live retrieval. Future indexing should follow the sites' access rules and licensing terms, and provide per-answer citations to the actual retrieved passages.
+
+The GitHub Actions Docker smoke tests exercise registration, task creation/listing/update/deletion, and user isolation in a fresh database. They **do not** verify the model weights at `E:\model\qwen3-1.7b`, actual GPU inference, live external website retrieval, HTTPS termination, database backup recovery, or browser-level accessibility. Perform those checks with the real production infrastructure before public launch.

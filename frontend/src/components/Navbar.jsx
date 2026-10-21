@@ -10,7 +10,7 @@ export function Navbar({ onOpenAiPlanner, onOpenDevChatbot, modelStatus, theme, 
   const [showUserMenu, setShowUserMenu] = useState(false);
 
   return (
-    <header style={{
+    <header className="app-navbar" style={{
       position: 'sticky',
       top: 0,
       zIndex: 40,
@@ -19,7 +19,7 @@ export function Navbar({ onOpenAiPlanner, onOpenDevChatbot, modelStatus, theme, 
       backdropFilter: 'blur(12px)',
       boxShadow: 'var(--shadow-sm)'
     }}>
-      <div style={{
+      <div className="app-nav-inner" style={{
         maxWidth: '1320px',
         margin: '0 auto',
         padding: '0.85rem 1.25rem',
@@ -49,16 +49,16 @@ export function Navbar({ onOpenAiPlanner, onOpenDevChatbot, modelStatus, theme, 
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <span style={{ fontWeight: 800, fontSize: '1.25rem', letterSpacing: '-0.03em' }}>Planify</span>
-              <span className="tag-badge prio-urgent" style={{ fontSize: '0.65rem', padding: '0.1rem 0.45rem' }}>CREATIVE</span>
+              <span className="tag-badge prio-urgent nav-brand-tag" style={{ fontSize: '0.65rem', padding: '0.1rem 0.45rem' }}>CREATIVE</span>
             </div>
-            <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '-2px' }}>
+            <p className="nav-brand-description" style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '-2px' }}>
               Adobe-Inspired Daily & AI Study Planner
             </p>
           </div>
         </div>
 
         {/* Center / Actions */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+        <div className="app-nav-actions" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
           {/* AI Dev Assistant Button */}
           <button
             onClick={onOpenDevChatbot}
@@ -76,7 +76,7 @@ export function Navbar({ onOpenAiPlanner, onOpenDevChatbot, modelStatus, theme, 
             title="Ask Qwen 3 AI (GeeksforGeeks, W3Schools, TPointTech)"
           >
             <Bot size={16} style={{ color: '#EB1000' }} />
-            <span style={{ fontWeight: 600 }}>AI Dev Assistant</span>
+            <span className="nav-action-label" style={{ fontWeight: 600 }}>AI Dev Assistant</span>
             <span style={{
               width: '6px',
               height: '6px',
@@ -98,13 +98,14 @@ export function Navbar({ onOpenAiPlanner, onOpenDevChatbot, modelStatus, theme, 
             }}
           >
             <Sparkles size={16} />
-            <span>AI Study Planner</span>
+            <span className="nav-action-label">AI Study Planner</span>
           </button>
 
           {/* Theme Toggle */}
           <button
             onClick={onToggleTheme}
             className="btn-ghost"
+            aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
             title="Toggle Dark/Light Mode"
             style={{ width: '38px', height: '38px', borderRadius: '50%', padding: 0 }}
           >
@@ -116,6 +117,8 @@ export function Navbar({ onOpenAiPlanner, onOpenDevChatbot, modelStatus, theme, 
             <button
               onClick={() => setShowNotifications(!showNotifications)}
               className="btn-ghost"
+              aria-label="Show notifications"
+              aria-expanded={showNotifications}
               title="Notifications"
               style={{ width: '38px', height: '38px', borderRadius: '50%', padding: 0, position: 'relative' }}
             >
@@ -214,6 +217,8 @@ export function Navbar({ onOpenAiPlanner, onOpenDevChatbot, modelStatus, theme, 
             <div style={{ position: 'relative' }}>
               <button
                 onClick={() => setShowUserMenu(!showUserMenu)}
+                aria-label="Account menu"
+                aria-expanded={showUserMenu}
                 style={{
                   display: 'flex',
                   alignItems: 'center',

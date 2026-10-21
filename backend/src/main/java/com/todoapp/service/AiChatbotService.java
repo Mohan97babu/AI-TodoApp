@@ -11,6 +11,7 @@ import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 
 import java.util.*;
 
@@ -21,6 +22,7 @@ public class AiChatbotService {
 
     private final WebKnowledgeService webKnowledgeService;
     private final RestTemplate restTemplate;
+    private final RestTemplate statusRestTemplate;
     private final ObjectMapper objectMapper;
 
     @Value("${app.openai.api-key:}")
@@ -34,7 +36,14 @@ public class AiChatbotService {
 
     public AiChatbotService(WebKnowledgeService webKnowledgeService) {
         this.webKnowledgeService = webKnowledgeService;
-        this.restTemplate = new RestTemplate();
+        SimpleClientHttpRequestFactory modelFactory = new SimpleClientHttpRequestFactory();
+        modelFactory.setConnectTimeout(4000);
+        modelFactory.setReadTimeout(120000);
+        this.restTemplate = new RestTemplate(modelFactory);
+        SimpleClientHttpRequestFactory statusFactory = new SimpleClientHttpRequestFactory();
+        statusFactory.setConnectTimeout(2000);
+        statusFactory.setReadTimeout(3000);
+        this.statusRestTemplate = new RestTemplate(statusFactory);
         this.objectMapper = new ObjectMapper();
     }
 
@@ -92,16 +101,16 @@ public class AiChatbotService {
 
         StringBuilder systemPrompt = new StringBuilder();
         systemPrompt.append("You are Planify Dev & Study Assistant, an expert AI coding tutor and daily study architect.\n");
-        systemPrompt.append("You are powered by Qwen 3 (1.7B) and grounded with documentation from GeeksforGeeks, W3Schools, and TPointTech.\n\n");
+        systemPrompt.append("You use locally curated programming topic notes plus suggested links to GeeksforGeeks, W3Schools, and TPointTech. These sites are not fetched live.\n\n");
         systemPrompt.append("Guidelines:\n");
         systemPrompt.append("1. Answer concisely with clear technical explanations and modern syntax.\n");
         systemPrompt.append("2. Include practical code snippets with clean syntax highlighting.\n");
-        systemPrompt.append("3. Cite concepts and reference GeeksforGeeks, W3Schools, and TPointTech where applicable.\n");
+        systemPrompt.append("3. Only mention suggested reference links if relevant; never claim to have browsed a site, verified an article, or read its live content.\n");
         systemPrompt.append("4. At the end of your answer, provide 1 to 3 short, actionable practice tasks the user can schedule into their daily planner.\n");
         systemPrompt.append("Format them under a header: '### Recommended Action Items:' with bullet points like '- [ ] Task Name (XX mins): Description'.\n\n");
 
         if (StringUtils.hasText(contextSnippet)) {
-            systemPrompt.append("Referenced Technical Context from Official Documentation:\n").append(contextSnippet).append("\n");
+            systemPrompt.append("Local curated topic notes (not fetched from websites):\n").append(contextSnippet).append("\n");
         }
 
         List<Map<String, String>> messages = new ArrayList<>();
@@ -168,13 +177,12 @@ public class AiChatbotService {
     private ChatbotResponse generateKnowledgeFallbackReply(String query, String contextSnippet, List<Map<String, String>> sources) {
         StringBuilder reply = new StringBuilder();
         reply.append("### Key Concepts & Technical Overview\n\n");
-        reply.append("Here is the verified guidance synthesized from **GeeksforGeeks**, **W3Schools**, and **TPointTech** for your query: `")
-                .append(query).append("`\n\n");
+        reply.append("The local AI model is currently unavailable. These are Planify's built-in learning notes, not verified live website content. Related tutorial links are suggestions for further reading.\n\n");
 
         if (StringUtils.hasText(contextSnippet)) {
             reply.append(contextSnippet).append("\n");
         } else {
-            reply.append("You can explore in-depth tutorials, interactive code playgrounds, and practical exercises on our verified learning partners:\n\n");
+            reply.append("No local topic notes matched this question. Please try a more specific programming topic or explore the suggested links.\n\n");
         }
 
         reply.append("\n### Recommended Action Items:\n");
@@ -226,7 +234,6 @@ public class AiChatbotService {
     public Map<String, Object> getModelStatus() {
         Map<String, Object> status = new HashMap<>();
         status.put("configuredModel", modelName);
-        status.put("endpoint", apiUrl);
 
         // Derive base URL to ping /v1/models
         String baseModelsUrl = apiUrl.replace("/chat/completions", "/models");
@@ -238,14 +245,13 @@ public class AiChatbotService {
                 headers.setBearerAuth(apiKey);
             }
             HttpEntity<Void> entity = new HttpEntity<>(headers);
-            ResponseEntity<String> res = restTemplate.exchange(baseModelsUrl, HttpMethod.GET, entity, String.class);
+            ResponseEntity<String> res = statusRestTemplate.exchange(baseModelsUrl, HttpMethod.GET, entity, String.class);
             long latency = System.currentTimeMillis() - start;
 
             if (res.getStatusCode().is2xxSuccessful() && res.getBody() != null) {
                 status.put("connected", true);
                 status.put("latencyMs", latency);
                 status.put("status", "ONLINE");
-                status.put("modelEngine", "Local llama.cpp GPU Engine (Vulkan/CUDA)");
             } else {
                 status.put("connected", false);
                 status.put("status", "UNAVAILABLE");
@@ -254,7 +260,6 @@ public class AiChatbotService {
             status.put("connected", false);
             status.put("latencyMs", -1);
             status.put("status", "OFFLINE");
-            status.put("error", e.getMessage());
         }
 
         return status;

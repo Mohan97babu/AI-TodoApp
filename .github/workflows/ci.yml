@@ -86,3 +86,5 @@ jobs:
             exit 1
           fi
           echo "Smoke tests passed: React, Spring Boot health, protected AI API"
+      - name: Authenticate and verify task CRUD plus user isolation
+        run: python3 scripts/smoke_test.py

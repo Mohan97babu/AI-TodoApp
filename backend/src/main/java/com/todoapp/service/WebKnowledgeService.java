@@ -207,6 +207,15 @@ public class WebKnowledgeService {
         if (query == null) query = "";
         String cleanQuery = query.toLowerCase(Locale.ROOT).trim();
         if (cleanQuery.length() > 200) cleanQuery = cleanQuery.substring(0, 200);
+        if (cleanQuery.isEmpty()) {
+            return Map.of(
+                    "contextSnippet", "",
+                    "sources", List.of(),
+                    "matchedTopicCount", 0,
+                    "knowledgeOrigin", "curated-local",
+                    "liveContentFetched", false
+            );
+        }
 
         boolean enableGfg = sourcesEnabled == null || sourcesEnabled.getOrDefault("geeksforgeeks", true);
         boolean enableW3s = sourcesEnabled == null || sourcesEnabled.getOrDefault("w3schools", true);

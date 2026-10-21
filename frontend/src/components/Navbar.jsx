@@ -49,10 +49,10 @@ export function Navbar({ onOpenAiPlanner, onOpenDevChatbot, modelStatus, theme, 
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <span style={{ fontWeight: 800, fontSize: '1.25rem', letterSpacing: '-0.03em' }}>Planify</span>
-              <span className="tag-badge prio-urgent nav-brand-tag" style={{ fontSize: '0.65rem', padding: '0.1rem 0.45rem' }}>CREATIVE</span>
+              
             </div>
             <p className="nav-brand-description" style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '-2px' }}>
-              Adobe-Inspired Daily & AI Study Planner
+              Tasks and learning, organized
             </p>
           </div>
         </div>
@@ -62,7 +62,7 @@ export function Navbar({ onOpenAiPlanner, onOpenDevChatbot, modelStatus, theme, 
           {/* AI Dev Assistant Button */}
           <button
             onClick={onOpenDevChatbot}
-            className="btn-secondary"
+            className="btn-secondary nav-dev-button"
             style={{
               padding: '0.5rem 0.95rem',
               fontSize: '0.85rem',

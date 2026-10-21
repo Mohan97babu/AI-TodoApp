@@ -43,6 +43,7 @@ export function TaskFilters({
             <button
               key={s.key}
               onClick={() => onStatusChange(s.key)}
+              aria-pressed={activeStatus === s.key}
               style={{
                 padding: '0.35rem 0.85rem',
                 borderRadius: 'var(--radius-full)',
@@ -69,7 +70,7 @@ export function TaskFilters({
         </div>
 
         {/* Search input */}
-        <div style={{
+        <div className="task-filter-search" style={{
           display: 'flex',
           alignItems: 'center',
           gap: '0.5rem',
@@ -84,6 +85,7 @@ export function TaskFilters({
           <input
             type="text"
             placeholder="Search tasks..."
+            aria-label="Search tasks"
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
             style={{
@@ -98,6 +100,7 @@ export function TaskFilters({
           {searchQuery && (
             <button
               onClick={() => onSearchChange('')}
+              aria-label="Clear search"
               style={{ padding: 0, color: 'var(--text-muted)' }}
             >
               <X size={14} />
@@ -105,6 +108,14 @@ export function TaskFilters({
           )}
         </div>
       </div>
+
+      {(activeStatus !== 'ALL' || activeCategory !== 'ALL' || searchQuery) && (
+        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+          <button type="button" className="btn-ghost" onClick={() => { onStatusChange('ALL'); onCategoryChange('ALL'); onSearchChange(''); }}>
+            <X size={14} aria-hidden="true" /> Clear all filters
+          </button>
+        </div>
+      )}
 
       {/* Category Chips */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
@@ -117,6 +128,7 @@ export function TaskFilters({
             <button
               key={cat}
               onClick={() => onCategoryChange(cat)}
+              aria-pressed={isSelected}
               style={{
                 fontSize: '0.75rem',
                 fontWeight: 600,

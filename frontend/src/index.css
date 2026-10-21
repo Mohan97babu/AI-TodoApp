@@ -375,3 +375,12 @@ input:focus-visible, select:focus-visible, textarea:focus-visible {
 }
 
 .task-sort-label select:focus-visible { outline: 2px solid var(--adobe-red); outline-offset: 3px; }
+
+/* One AI entry point per breakpoint: navigation on desktop, floating action on mobile. */
+@media (min-width: 851px) {
+  .assistant-fab { display: none !important; }
+}
+@media (max-width: 850px) {
+  .nav-dev-button { display: none !important; }
+  .welcome-actions .btn-secondary { display: none; }
+}

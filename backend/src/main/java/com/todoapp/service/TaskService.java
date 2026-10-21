@@ -9,10 +9,17 @@ import com.todoapp.repository.TaskRepository;
 import com.todoapp.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.CriteriaQuery;
+import jakarta.persistence.criteria.Predicate;
+import jakarta.persistence.criteria.Root;
 
 import java.time.DayOfWeek;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
+import java.util.Locale;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -24,6 +31,9 @@ public class TaskService {
     private final StudyPlanRepository studyPlanRepository;
     private final ReminderService reminderService;
     private final ReminderRepository reminderRepository;
+
+    @PersistenceContext
+    private EntityManager entityManager;
 
     public TaskService(
             TaskRepository taskRepository,
@@ -40,10 +50,35 @@ public class TaskService {
 
     @Transactional(readOnly = true)
     public List<TaskDto> getTasks(Long userId, TaskStatus status, String category, String search) {
-        return taskRepository.searchTasks(userId, status, category, search)
-                .stream()
-                .map(this::toDto)
-                .collect(Collectors.toList());
+        // Build predicates only for supplied filters: nullable :param IS NULL predicates
+        // can fail on PostgreSQL with "could not determine data type of parameter".
+        CriteriaBuilder cb = entityManager.getCriteriaBuilder();
+        CriteriaQuery<Task> query = cb.createQuery(Task.class);
+        Root<Task> task = query.from(Task.class);
+        List<Predicate> filters = new ArrayList<>();
+        filters.add(cb.equal(task.get("user").get("id"), userId));
+
+        if (status != null) {
+            filters.add(cb.equal(task.get("status"), status));
+        }
+        if (category != null && !category.isBlank()) {
+            filters.add(cb.equal(cb.lower(task.get("category")), category.trim().toLowerCase(Locale.ROOT)));
+        }
+        if (search != null && !search.isBlank()) {
+            String pattern = "%" + search.trim().toLowerCase(Locale.ROOT) + "%";
+            filters.add(cb.or(
+                    cb.like(cb.lower(task.get("title")), pattern),
+                    cb.like(cb.lower(task.get("description")), pattern)
+            ));
+        }
+        query.where(filters.toArray(Predicate[]::new));
+        query.orderBy(
+                cb.asc(cb.selectCase().when(cb.isNull(task.get("dueDate")), 1).otherwise(0)),
+                cb.asc(task.get("dueDate")),
+                cb.desc(task.get("createdAt"))
+        );
+        return entityManager.createQuery(query).getResultList()
+                .stream().map(this::toDto).collect(Collectors.toList());
     }
 
     @Transactional(readOnly = true)

@@ -190,8 +190,8 @@ function MainApp() {
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       <Navbar
-        onOpenAiPlanner={() => setIsAiDrawerOpen(true)}
-        onOpenDevChatbot={() => setIsDevChatbotOpen(true)}
+        onOpenAiPlanner={() => isAuthenticated ? setIsAiDrawerOpen(true) : openAuthModal('login')}
+        onOpenDevChatbot={() => isAuthenticated ? setIsDevChatbotOpen(true) : openAuthModal('login')}
         modelStatus={modelStatus}
         theme={theme}
         onToggleTheme={toggleTheme}
@@ -295,12 +295,12 @@ function MainApp() {
                   <span>Sign In with Demo</span>
                 </button>
                 <button
-                  onClick={() => setIsAiDrawerOpen(true)}
+                  onClick={() => isAuthenticated ? setIsAiDrawerOpen(true) : openAuthModal('login')}
                   className="btn-ghost"
                   style={{ color: 'var(--adobe-red)', fontWeight: 600 }}
                 >
                   <Sparkles size={16} />
-                  <span>Preview AI Study Planner</span>
+                  <span>Sign in for AI study plans</span>
                 </button>
               </div>
             </div>
@@ -312,8 +312,8 @@ function MainApp() {
             user={user}
             tasks={tasks}
             modelStatus={modelStatus}
-            onOpenDevChatbot={() => setIsDevChatbotOpen(true)}
-            onOpenPlanner={() => setIsAiDrawerOpen(true)}
+            onOpenDevChatbot={() => isAuthenticated ? setIsDevChatbotOpen(true) : openAuthModal('login')}
+            onOpenPlanner={() => isAuthenticated ? setIsAiDrawerOpen(true) : openAuthModal('login')}
           />
         )}
 
@@ -373,7 +373,7 @@ function MainApp() {
             </p>
             <div style={{ display: 'flex', justifyContent: 'center', gap: '0.75rem' }}>
               {isAuthenticated ? (
-                <button onClick={() => setIsAiDrawerOpen(true)} className="btn-primary">
+                <button onClick={() => isAuthenticated ? setIsAiDrawerOpen(true) : openAuthModal('login')} className="btn-primary">
                   <Sparkles size={16} />
                   <span>Generate AI Study Plan</span>
                 </button>
@@ -426,7 +426,7 @@ function MainApp() {
 
       {/* Floating AI Dev Assistant Trigger */}
       <button
-        onClick={() => setIsDevChatbotOpen(true)}
+        onClick={() => isAuthenticated ? setIsDevChatbotOpen(true) : openAuthModal('login')}
         className="btn-primary assistant-fab"
         aria-label="Open Qwen AI assistant"
         style={{

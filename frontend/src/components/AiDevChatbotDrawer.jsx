@@ -5,10 +5,13 @@ import {
   RefreshCw, CheckCircle2, Globe, Terminal, Cpu
 } from 'lucide-react';
 import { aiService } from '../services/aiService';
+import { useAuth } from '../context/AuthContext';
 
 export function AiDevChatbotDrawer({ isOpen, onClose, onAddTask }) {
+  const { user } = useAuth();
+  const storageKey = 'planify_dev_chat_history_' + (user?.id || user?.username || 'guest');
   const [messages, setMessages] = useState(() => {
-    const saved = localStorage.getItem('planify_dev_chat_history');
+    const saved = localStorage.getItem(storageKey);
     if (saved) {
       try { return JSON.parse(saved); } catch (e) { /* ignore */ }
     }
@@ -46,6 +49,15 @@ export function AiDevChatbotDrawer({ isOpen, onClose, onAddTask }) {
 
   const messagesEndRef = useRef(null);
 
+  useEffect(() => {
+    if (!isOpen) return;
+    const closeOnEscape = (event) => {
+      if (event.key === 'Escape') onClose();
+    };
+    document.addEventListener('keydown', closeOnEscape);
+    return () => document.removeEventListener('keydown', closeOnEscape);
+  }, [isOpen, onClose]);
+
   // Auto-scroll
   useEffect(() => {
     if (isOpen) {
@@ -56,9 +68,9 @@ export function AiDevChatbotDrawer({ isOpen, onClose, onAddTask }) {
   // Persist messages in localStorage
   useEffect(() => {
     try {
-      localStorage.setItem('planify_dev_chat_history', JSON.stringify(messages));
+      localStorage.setItem(storageKey, JSON.stringify(messages.slice(-50)));
     } catch (e) { /* ignore */ }
-  }, [messages]);
+  }, [messages, storageKey]);
 
   // Fetch model health status on open
   useEffect(() => {
@@ -94,7 +106,7 @@ export function AiDevChatbotDrawer({ isOpen, onClose, onAddTask }) {
         }
       ];
       setMessages(reset);
-      localStorage.removeItem('planify_dev_chat_history');
+      localStorage.removeItem(storageKey);
     }
   };
 
@@ -161,7 +173,7 @@ export function AiDevChatbotDrawer({ isOpen, onClose, onAddTask }) {
         {
           id: 'err-' + Date.now(),
           role: 'assistant',
-          content: `⚠️ **Connection Note**: Could not reach local model gateway (${err.message}). Using local offline fallback knowledge.`,
+          content: `⚠️ **Unable to answer**: ${err.message || 'The assistant is currently unavailable.'} Please try again after checking the service.`,
           sources: [
             { site: 'GeeksforGeeks', title: 'GeeksforGeeks Tutorial Portal', url: 'https://www.geeksforgeeks.org/' },
             { site: 'W3Schools', title: 'W3Schools Web Guide', url: 'https://www.w3schools.com/' },
@@ -188,7 +200,7 @@ export function AiDevChatbotDrawer({ isOpen, onClose, onAddTask }) {
   if (!isOpen) return null;
 
   return (
-    <div style={{
+    <div className="chat-dialog" role="presentation" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }} style={{
       position: 'fixed',
       inset: 0,
       backgroundColor: 'rgba(0, 0, 0, 0.75)',
@@ -198,7 +210,7 @@ export function AiDevChatbotDrawer({ isOpen, onClose, onAddTask }) {
       zIndex: 95,
       animation: 'fadeIn 0.2s ease',
     }}>
-      <div style={{
+      <div className="chat-panel" role="dialog" aria-modal="true" aria-label="Dev and Study AI Assistant" style={{
         width: '100%',
         maxWidth: '680px',
         height: '100%',
@@ -262,7 +274,7 @@ export function AiDevChatbotDrawer({ isOpen, onClose, onAddTask }) {
                 <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
                   {modelStatus?.connected
                     ? `Local Qwen 3 (1.7B) • ${modelStatus.latencyMs ? modelStatus.latencyMs + 'ms' : 'Ready'}`
-                    : 'Local Gateway Connecting...'}
+                    : 'Local model offline — answers may be limited'}
                 </span>
                 <button
                   onClick={checkStatus}
@@ -287,6 +299,7 @@ export function AiDevChatbotDrawer({ isOpen, onClose, onAddTask }) {
             </button>
             <button
               onClick={onClose}
+              aria-label="Close AI assistant"
               className="btn-ghost"
               style={{ padding: '0.45rem', borderRadius: '6px' }}
             >
@@ -314,6 +327,8 @@ export function AiDevChatbotDrawer({ isOpen, onClose, onAddTask }) {
           {/* GeeksforGeeks Toggle */}
           <button
             onClick={() => toggleSource('geeksforgeeks')}
+            aria-pressed={sourcesEnabled.geeksforgeeks}
+            aria-label={`Use geeksforgeeks as a knowledge source`}
             style={{
               display: 'flex',
               alignItems: 'center',
@@ -336,6 +351,8 @@ export function AiDevChatbotDrawer({ isOpen, onClose, onAddTask }) {
           {/* W3Schools Toggle */}
           <button
             onClick={() => toggleSource('w3schools')}
+            aria-pressed={sourcesEnabled.w3schools}
+            aria-label={`Use w3schools as a knowledge source`}
             style={{
               display: 'flex',
               alignItems: 'center',
@@ -358,6 +375,8 @@ export function AiDevChatbotDrawer({ isOpen, onClose, onAddTask }) {
           {/* TPointTech Toggle */}
           <button
             onClick={() => toggleSource('tpointtech')}
+            aria-pressed={sourcesEnabled.tpointtech}
+            aria-label={`Use tpointtech as a knowledge source`}
             style={{
               display: 'flex',
               alignItems: 'center',
@@ -379,7 +398,7 @@ export function AiDevChatbotDrawer({ isOpen, onClose, onAddTask }) {
         </div>
 
         {/* Messages Feed */}
-        <div style={{
+        <div role="log" aria-live="polite" aria-relevant="additions text" className="chat-message-feed" style={{
           flex: 1,
           overflowY: 'auto',
           padding: '1.25rem',
@@ -486,7 +505,7 @@ export function AiDevChatbotDrawer({ isOpen, onClose, onAddTask }) {
                     gap: '5px',
                   }}>
                     <BookOpen size={13} />
-                    Verified Documentation & Tutorials:
+                    Related Learning Sources:
                   </div>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
                     {msg.sources.map((src, sIdx) => {
@@ -617,7 +636,7 @@ export function AiDevChatbotDrawer({ isOpen, onClose, onAddTask }) {
           ))}
 
           {loading && (
-            <div style={{
+            <div role="status" style={{
               display: 'flex',
               alignItems: 'center',
               gap: '0.5rem',
@@ -699,6 +718,8 @@ export function AiDevChatbotDrawer({ isOpen, onClose, onAddTask }) {
             <input
               type="text"
               value={input}
+              maxLength={2000}
+              aria-label="Ask the AI assistant a question"
               onChange={(e) => setInput(e.target.value)}
               placeholder="Ask about algorithms, code syntax, or web tutorials..."
               style={{
@@ -713,6 +734,7 @@ export function AiDevChatbotDrawer({ isOpen, onClose, onAddTask }) {
             />
             <button
               type="submit"
+              aria-label={loading ? 'Generating answer' : 'Send message'}
               disabled={!input.trim() || loading}
               className="btn-primary"
               style={{

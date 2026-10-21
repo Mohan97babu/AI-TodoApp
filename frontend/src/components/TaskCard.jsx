@@ -9,7 +9,7 @@ export function TaskCard({ task, onToggleStatus, onEdit, onDelete }) {
     e.stopPropagation();
     const nextStatus = isCompleted ? 'PENDING' : 'COMPLETED';
     
-    if (nextStatus === 'COMPLETED') {
+    if (nextStatus === 'COMPLETED' && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
       confetti({
         particleCount: 40,
         spread: 60,
@@ -64,19 +64,13 @@ export function TaskCard({ task, onToggleStatus, onEdit, onDelete }) {
         position: 'relative',
         opacity: isCompleted ? 0.65 : 1,
       }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.borderColor = 'var(--border-active)';
-        e.currentTarget.style.transform = 'translateY(-2px)';
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.borderColor = 'var(--border-subtle)';
-        e.currentTarget.style.transform = 'translateY(0)';
-      }}
+
     >
       {/* Checkbox */}
       <button
         onClick={handleToggle}
-        aria-label="Toggle task status"
+        aria-label={isCompleted ? `Mark ${task.title} as pending` : `Complete ${task.title}`}
+        aria-pressed={isCompleted}
         style={{
           width: '22px',
           height: '22px',
@@ -176,6 +170,7 @@ export function TaskCard({ task, onToggleStatus, onEdit, onDelete }) {
           className="btn-ghost"
           style={{ padding: '0.35rem', color: 'var(--text-secondary)' }}
           title="Edit Task"
+          aria-label={`Edit ${task.title}`}
         >
           <Edit2 size={15} />
         </button>
@@ -184,6 +179,7 @@ export function TaskCard({ task, onToggleStatus, onEdit, onDelete }) {
           className="btn-ghost"
           style={{ padding: '0.35rem', color: 'var(--text-muted)' }}
           title="Delete Task"
+          aria-label={`Delete ${task.title}`}
         >
           <Trash2 size={15} />
         </button>

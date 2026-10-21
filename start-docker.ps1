@@ -24,6 +24,11 @@ if (-not (Test-Path -LiteralPath $envFile)) {
     Write-Host 'Using existing .env without overwriting its secrets.' -ForegroundColor Cyan
 }
 
+$savedEnv = [System.IO.File]::ReadAllText($envFile)
+if ($savedEnv -match '(?m)^\\s*(?:DB_PASSWORD|JWT_SECRET)\\s*=\\s*CHANGE_ME') {
+    throw 'Update DB_PASSWORD and JWT_SECRET in your existing .env. Never deploy placeholder credentials.'
+}
+
 if (-not (Get-Command docker -ErrorAction SilentlyContinue)) {
     throw 'Docker Desktop is required. Install and launch Docker Desktop first.'
 }

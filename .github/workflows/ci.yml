@@ -43,3 +43,19 @@ jobs:
           cache: maven
           cache-dependency-path: backend/pom.xml
       - run: mvn -B -ntp verify
+
+  deployment-config:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate Docker Compose configuration
+        run: |
+          cp .env.example .env
+          docker compose config --quiet
+      - name: Check committed credential patterns
+        run: |
+          if grep -R -E 'sk-mdl-[A-Za-z0-9_-]{20,}|404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970' \
+            backend/src/main frontend/src docker-compose.yml; then
+            echo "Committed production-like credentials detected."
+            exit 1
+          fi

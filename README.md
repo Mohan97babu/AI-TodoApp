@@ -70,84 +70,215 @@ A modern, high-velocity daily planning and to-do application inspired by Adobe's
 
 ---
 
-## 🚀 Quick Start (Local Native)
+## Run the application — commands and where to run them
 
-### Option 1: Local Windows launcher
+> **Windows paths used below:** application at `F:\AI-TodoApp`; Qwen model gateway at `E:\model`. Use **PowerShell** for the commands marked PowerShell. The frontend is on port **5174**, the Spring Boot API on **8082**, and the optional local Qwen gateway on **8000**. Choose **either** native development **or** Docker for the application; do not start both on the same ports.
 
-Copy `.env.example` to `.env` and set a random `JWT_SECRET` plus your local gateway token before starting. Ensure Java 17+, Maven, Node.js, npm and Python are available. Then run:
-```cmd
+### 1. Get the latest `mothini` code — Windows PowerShell
+
+If you already cloned the repository:
+
+~~~powershell
+cd F:\AI-TodoApp
+git fetch origin
+git switch mothini
+git pull --ff-only origin mothini
+~~~
+
+If you **have not** cloned it (run in PowerShell from any directory; `F:\AI-TodoApp` must not already exist):
+
+~~~powershell
+git clone --branch mothini https://github.com/Mohan97babu/AI-TodoApp.git F:\AI-TodoApp
+cd F:\AI-TodoApp
+~~~
+
+### 2. Configure environment variables — Windows PowerShell, project root
+
+~~~powershell
+cd F:\AI-TodoApp
+Copy-Item .env.example .env
+notepad .env
+~~~
+
+In `.env`, replace **all** `CHANGE_ME` values with a strong, unique `DB_PASSWORD`, a random `JWT_SECRET` of at least 32 characters, and the API token required by **your own** local model gateway (`OPENAI_API_KEY`). Keep the file private and **never commit it**. Set `OPENAI_MODEL=qwen3-1.7b`.
+
+To generate a random JWT signing secret in PowerShell and paste the output into the `JWT_SECRET` value in `.env`:
+
+~~~powershell
+$bytes = New-Object byte[] 48
+[System.Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($bytes)
+[Convert]::ToBase64String($bytes)
+~~~
+
+The example `OPENAI_API_URL=http://host.docker.internal:8000/v1/chat/completions` is for Docker. The native launcher translates this to `localhost`. Do not put the model's path (`E:\model\qwen3-1.7b`) in `OPENAI_API_URL`: the Spring Boot app needs an **HTTP endpoint**, not a model file path.
+
+### 3A. Easiest local development — Windows (H2 database)
+
+**Prerequisites:** Java 17+, Maven 3.8+, Node.js 22/npm, Python and the installed dependencies of your existing model gateway. Docker is **not** needed for this option. From **PowerShell**:
+
+~~~powershell
+cd F:\AI-TodoApp
+.\start.ps1
+~~~
+
+Or from **Command Prompt (CMD)**:
+
+~~~bat
+cd /d F:\AI-TodoApp
 start.bat
-```
-This automatically starts:
-1. **Local Model Server** on `http://localhost:8000` (serving `qwen3-1.7b`)
-2. **Spring Boot Backend** on `http://localhost:8082`
-3. **React Frontend** on `http://localhost:5174`
-4. Open `http://localhost:5174` in your browser after the service windows start.
+~~~
 
----
+The launcher reads `.env`, starts the backend and frontend in separate windows, and tries to start `E:\model\run_server.py` when that file exists. To check the model and gateway paths in PowerShell:
 
-### Option 2: Step-by-Step Manual Launch
+~~~powershell
+Test-Path 'E:\model\run_server.py'
+Test-Path 'E:\model\qwen3-1.7b\Qwen3-1.7B-Q6_K.gguf'
+~~~
 
-#### 1. Start the Local Model Server
-```bash
+For this option, Spring Boot uses **H2 in-memory development storage**: tasks do **not** survive a full backend restart. The launcher opens process windows; check their logs if a service fails. Open `http://localhost:5174/` in your browser.
+
+#### Start services manually (three PowerShell terminals, alternative to the launcher)
+
+**Terminal 1 — local model gateway** (only if you have `E:\model\run_server.py`):
+
+~~~powershell
 cd E:\model
 python run_server.py --host 127.0.0.1 --port 8000 --no-browser
-```
+~~~
 
-#### 2. Start the Spring Boot Backend
-```cmd
+**Terminal 2 — Spring Boot backend.** The manual backend process does **not** load `.env` automatically, so import it into this PowerShell session first:
+
+~~~powershell
+cd F:\AI-TodoApp
+Get-Content .env | ForEach-Object {
+  if ($_ -match '^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)$') {
+    [Environment]::SetEnvironmentVariable($Matches[1], $Matches[2].Trim().Trim('"').Trim("'"), 'Process')
+  }
+}
+$env:OPENAI_API_URL = 'http://localhost:8000/v1/chat/completions'
 cd backend
-mvn spring-boot:run -Dspring-boot.run.profiles=h2
-```
-Backend will be live on `http://localhost:8082`.
+mvn spring-boot:run "-Dspring-boot.run.profiles=h2"
+~~~
 
-#### 3. Start the React Frontend
-```bash
-cd frontend
+**Terminal 3 — React frontend:**
+
+~~~powershell
+cd F:\AI-TodoApp\frontend
 npm ci
 npm run dev
-```
-Frontend will be live on `http://localhost:5174`.
+~~~
 
----
+Visit `http://localhost:5174/`. The development Vite server forwards `/api` requests to `http://localhost:8082`.
 
-## 🔑 Model & API Key Configuration
+### 3B. Docker deployment — Windows PowerShell (persistent PostgreSQL)
 
-| Parameter | Value |
-|---|---|
-| **Model Path** | `E:\model\qwen3-1.7b\Qwen3-1.7B-Q6_K.gguf` |
-| **Model ID** | `qwen3-1.7b` |
-| **Gateway Base URL** | `http://localhost:8000/v1` |
-| **Local Model Gateway API Key** | `[SET_IN_ENV]` |
-| **Grounding Sources** | GeeksforGeeks, W3Schools, TPointTech |
+**Prerequisites:** Docker Desktop with Docker Compose, the configured `.env` from step 2, and an independently running Qwen gateway if you want live model answers. Run all the following **from the project root**:
 
----
-
-## 🐳 Docker Deployment
-
-To run containerized services, first create `.env` with strong values as described below:
-```bash
+~~~powershell
+cd F:\AI-TodoApp
+docker compose config --quiet
 docker compose up --build -d
-```
-- Frontend: `http://localhost:5174`
-- Backend: `http://localhost:8082`
-- PostgreSQL: `localhost:5433` (Database: `tododb`)
+docker compose ps
+~~~
 
+Check the application and services:
 
-## Production configuration (required)
+~~~powershell
+curl.exe http://localhost:8082/actuator/health
+Start-Process 'http://localhost:5174/'
+docker compose logs --tail 100 backend
+~~~
 
-1. Copy `.env.example` to `.env`, replace every placeholder with unique strong secrets, and keep `.env` out of Git.
-2. Rotate any model API key and JWT signing secret that were previously committed. Changing the JWT secret invalidates existing sessions.
-3. Run `docker compose up --build -d` and check `docker compose ps` and `http://localhost:5174/`.
-4. Production frontend is served by Nginx with `/api` forwarded to Spring Boot; expose TLS using your chosen reverse proxy/load balancer.
-5. Qwen runs on the host, not inside Compose; configure `OPENAI_API_URL` to reach your actual model gateway from the backend container. Protect the model gateway with a firewall and key.
-6. API chat and study planning require login; model status and health remain public.
+To follow backend logs continuously (press **Ctrl+C** to stop following logs):
 
-Run `cd frontend && npm ci && npm run build` and `cd backend && mvn -B test package` before release.
+~~~powershell
+docker compose logs -f backend
+~~~
 
-**Existing PostgreSQL volumes:** Changing `DB_USER` or `DB_PASSWORD` in Compose does not update credentials inside an already-initialized database. Back up data and migrate credentials before switching an existing deployment; do not delete production volumes just to reset a password.
+To **stop** the containers without deleting PostgreSQL data:
 
-**Release gate:** CI runs React tests/build, Maven verification, configuration/secret scans, and a Docker smoke test. HTTPS, backups, database migrations, monitoring, and access policies must still be configured for a public production environment. Never expose the model gateway directly to the internet.
+~~~powershell
+cd F:\AI-TodoApp
+docker compose down
+~~~
+
+To start again using existing images:
+
+~~~powershell
+docker compose up -d
+~~~
+
+**Database:** PostgreSQL runs in Docker and persists data in the `pgdata` volume. Never use `docker compose down -v` on data you want to keep. The database is bound to `127.0.0.1:5433`, the backend to `127.0.0.1:8082`, and the Nginx frontend to port `5174`.
+
+**Qwen with Docker:** The model weights at `E:\model\qwen3-1.7b` remain on the Windows host; they are **not** bundled in the Docker images. Start the host's gateway separately, and ensure the container can actually reach the `OPENAI_API_URL` in `.env` (normally `http://host.docker.internal:8000/v1/chat/completions`). A gateway that listens only on `127.0.0.1` may not be reachable from a container. If you change its listening address, restrict port 8000 with Windows Firewall; do **not** expose it publicly. Use the gateway's own API token.
+
+### 4. Test before pushing or deploying
+
+Run **frontend tests and production build** from Windows PowerShell:
+
+~~~powershell
+cd F:\AI-TodoApp\frontend
+npm ci
+npm test
+npm run build
+~~~
+
+Run **Spring Boot verification** from another PowerShell terminal:
+
+~~~powershell
+cd F:\AI-TodoApp\backend
+mvn -B -ntp verify
+~~~
+
+The connected GitHub Actions workflow additionally builds the Docker images and tests API health, authentication, task CRUD, and isolation between users against a disposable PostgreSQL database.
+
+### 5. Troubleshooting commands
+
+~~~powershell
+# From F:\AI-TodoApp — container status and errors
+docker compose ps
+docker compose logs --tail 150 backend
+docker compose logs --tail 100 postgres
+docker compose logs --tail 100 frontend
+
+# Confirm the API is responding
+curl.exe -i http://localhost:8082/actuator/health
+
+# Confirm Java, Maven and Node.js are installed
+java -version
+mvn -version
+node --version
+npm --version
+
+# Check local model gateway files
+Test-Path 'E:\model\run_server.py'
+Test-Path 'E:\model\qwen3-1.7b\Qwen3-1.7B-Q6_K.gguf'
+~~~
+
+If Docker cannot start, verify Docker Desktop is running, the `.env` placeholders were replaced, and ports 5174/8082/5433 are free. If Qwen shows offline, check port 8000, the model gateway process, its API token, and the configured `OPENAI_API_URL`.
+
+### 6. Git commands to commit future updates — PowerShell
+
+~~~powershell
+cd F:\AI-TodoApp
+git switch mothini
+git status
+git add .
+git commit -m "Describe your changes"
+git push origin mothini
+~~~
+
+Only run `git commit` when you have local changes to save. The `.env` file is ignored by Git; double-check staged files with `git diff --cached --name-only` before pushing.
+
+### Production release notes
+
+- Keep JWT, database, and gateway secrets in environment configuration. **Rotate credentials that appeared in earlier commits**: removing them from the latest source does not remove them from Git history.
+- Use HTTPS/TLS in front of Nginx for public access. Configure firewall rules, monitoring, database backups, disaster recovery, and migrations.
+- Changing `DB_USER` or `DB_PASSWORD` in `.env` does not reconfigure an already-initialized PostgreSQL volume; plan credential changes without deleting production data.
+- API chat and study planning require sign-in. Only public health/model availability information should be exposed.
+- Verify Qwen's real inference separately on your Windows PC. The repository's programming knowledge is **curated topic notes with reference links**, not live ingestion of GeeksforGeeks, W3Schools, or TPointTech.
+
+---
 
 ## Documentation integrity and remaining launch requirements
 

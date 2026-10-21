@@ -1,4 +1,4 @@
-name: Validate frontend and backend
+name: Validate app, Docker and AI integration
 
 on:
   push:
@@ -52,6 +52,7 @@ jobs:
         run: |
           cp .env.example .env
           docker compose config --quiet
+          docker compose -f docker-compose.yml -f docker-compose.ci.yml config --quiet
       - name: Check committed credential patterns
         run: |
           if grep -R -E 'sk-mdl-[A-Za-z0-9_-]{20,}|404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970' \
@@ -69,10 +70,10 @@ jobs:
       - name: Build and boot production stack
         run: |
           cp .env.example .env
-          docker compose up --build -d
+          docker compose -f docker-compose.yml -f docker-compose.ci.yml up --build -d
       - name: Test frontend, backend and AI endpoint authentication
         run: |
-          trap 'result=$?; if [ "$result" -ne 0 ]; then docker compose logs --no-color --tail=160 backend; fi; docker compose down -v' EXIT
+          trap 'result=$?; if [ "$result" -ne 0 ]; then docker compose -f docker-compose.yml -f docker-compose.ci.yml logs --no-color --tail=160 backend; fi; docker compose -f docker-compose.yml -f docker-compose.ci.yml down -v' EXIT
           curl --fail --silent --show-error --retry 40 --retry-delay 3 --retry-all-errors \
             http://127.0.0.1:8082/actuator/health
           curl --fail --silent --show-error --retry 20 --retry-delay 3 --retry-all-errors \

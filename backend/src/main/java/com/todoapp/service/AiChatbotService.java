@@ -139,6 +139,11 @@ public class AiChatbotService {
         body.put("messages", messages);
         body.put("temperature", 0.7);
         body.put("max_tokens", 1024);
+        // Ollama's Qwen3 supports turning off internal reasoning for concise
+        // user-facing responses; do not send Ollama-specific controls to external gateways.
+        if (apiUrl.contains("ollama:11434")) {
+            body.put("reasoning_effort", "none");
+        }
 
         HttpEntity<Map<String, Object>> entity = new HttpEntity<>(body, headers);
         ResponseEntity<String> apiRes = restTemplate.postForEntity(apiUrl, entity, String.class);

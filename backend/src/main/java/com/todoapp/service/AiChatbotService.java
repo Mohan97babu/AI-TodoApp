@@ -23,7 +23,7 @@ public class AiChatbotService {
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
 
-    @Value("${app.openai.api-key:sk-mdl-Axh6jn1UzhEss0ERIrAwRAuypUsgb1CmuQW_gaWZLBc}")
+    @Value("${app.openai.api-key:}")
     private String apiKey;
 
     @Value("${app.openai.api-url:http://localhost:8000/v1/chat/completions}")
@@ -41,6 +41,9 @@ public class AiChatbotService {
     public ChatbotResponse processChat(ChatbotRequest request) {
         long startTime = System.currentTimeMillis();
         String userQuery = request.getMessage() != null ? request.getMessage().trim() : "";
+        if (userQuery.isEmpty() || userQuery.length() > 2000) {
+            throw new IllegalArgumentException("Please enter a question between 1 and 2000 characters.");
+        }
 
         // 1. Retrieve web knowledge context from GeeksforGeeks, W3Schools, and TPointTech
         Map<String, Object> knowledgeResult = webKnowledgeService.retrieveKnowledge(
@@ -110,7 +113,11 @@ public class AiChatbotService {
             for (int i = start; i < history.size(); i++) {
                 Map<String, String> h = history.get(i);
                 if (h.containsKey("role") && h.containsKey("content")) {
-                    messages.add(Map.of("role", h.get("role"), "content", h.get("content")));
+                    String role = h.get("role");
+                    String content = h.get("content");
+                    if (("user".equals(role) || "assistant".equals(role)) && content != null && content.length() <= 4000) {
+                        messages.add(Map.of("role", role, "content", content));
+                    }
                 }
             }
         }

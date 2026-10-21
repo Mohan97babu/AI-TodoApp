@@ -4,6 +4,7 @@ import { NotificationProvider, useNotifications } from './context/NotificationCo
 import { Navbar } from './components/Navbar';
 import { AuthModal } from './components/AuthModal';
 import { StatsOverview } from './components/StatsOverview';
+import { DashboardWelcome } from './components/DashboardWelcome';
 import { QuickAddTask } from './components/QuickAddTask';
 import { TaskFilters } from './components/TaskFilters';
 import { TaskCard } from './components/TaskCard';
@@ -25,6 +26,8 @@ function MainApp() {
   // Task & Filter state
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [taskError, setTaskError] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [activeStatus, setActiveStatus] = useState('ALL');
   const [activeCategory, setActiveCategory] = useState('ALL');
   const [searchQuery, setSearchQuery] = useState('');
@@ -68,6 +71,12 @@ function MainApp() {
     setTimeout(() => setToastMessage(''), 3500);
   };
 
+  // Avoid network requests on every keystroke.
+  useEffect(() => {
+    const timeout = window.setTimeout(() => setDebouncedSearch(searchQuery), 250);
+    return () => window.clearTimeout(timeout);
+  }, [searchQuery]);
+
   // Fetch tasks
   const loadTasks = useCallback(async () => {
     if (!isAuthenticated) {
@@ -75,19 +84,21 @@ function MainApp() {
       return;
     }
     setLoading(true);
+    setTaskError('');
     try {
       const data = await taskService.getTasks({
         status: activeStatus,
         category: activeCategory,
-        search: searchQuery,
+        search: debouncedSearch,
       });
       setTasks(data || []);
     } catch (err) {
       console.error('Failed to load tasks:', err);
+      setTaskError('We could not load your tasks. Check your connection and try again.');
     } finally {
       setLoading(false);
     }
-  }, [isAuthenticated, activeStatus, activeCategory, searchQuery]);
+  }, [isAuthenticated, activeStatus, activeCategory, debouncedSearch]);
 
   useEffect(() => {
     loadTasks();
@@ -99,10 +110,15 @@ function MainApp() {
       openAuthModal('login');
       return;
     }
-    const created = await taskService.createTask(taskData);
-    setTasks((prev) => [created, ...prev]);
-    showToast('Task created successfully');
-    refreshReminders();
+    try {
+      const created = await taskService.createTask(taskData);
+      setTasks((prev) => [created, ...prev]);
+      showToast('Task created successfully');
+      refreshReminders();
+    } catch (err) {
+      showToast(err.message || 'Could not create task');
+      throw err;
+    }
   };
 
   const handleToggleStatus = async (taskId, newStatus) => {
@@ -113,17 +129,24 @@ function MainApp() {
       refreshReminders();
     } catch (err) {
       console.error('Failed to update status:', err);
+      showToast('Could not update task. Try again.');
     }
   };
 
   const handleSaveTaskEdit = async (taskId, updateData) => {
-    const updated = await taskService.updateTask(taskId, updateData);
-    setTasks((prev) => prev.map((t) => (t.id === taskId ? updated : t)));
-    showToast('Task updated');
-    refreshReminders();
+    try {
+      const updated = await taskService.updateTask(taskId, updateData);
+      setTasks((prev) => prev.map((t) => (t.id === taskId ? updated : t)));
+      showToast('Task updated');
+      refreshReminders();
+    } catch (err) {
+      showToast(err.message || 'Could not save changes');
+      throw err;
+    }
   };
 
   const handleDeleteTask = async (taskId) => {
+    if (!window.confirm('Delete this task? This action cannot be undone.')) return;
     try {
       await taskService.deleteTask(taskId);
       setTasks((prev) => prev.filter((t) => t.id !== taskId));
@@ -131,6 +154,7 @@ function MainApp() {
       refreshReminders();
     } catch (err) {
       console.error('Failed to delete task:', err);
+      showToast('Could not delete task. Try again.');
     }
   };
 
@@ -283,6 +307,16 @@ function MainApp() {
           </div>
         )}
 
+        {isAuthenticated && (
+          <DashboardWelcome
+            user={user}
+            tasks={tasks}
+            modelStatus={modelStatus}
+            onOpenDevChatbot={() => setIsDevChatbotOpen(true)}
+            onOpenPlanner={() => setIsAiDrawerOpen(true)}
+          />
+        )}
+
         {/* Dashboard Overview */}
         <StatsOverview tasks={tasks} />
 
@@ -301,6 +335,12 @@ function MainApp() {
         />
 
         {/* Task List Section */}
+        {taskError && (
+          <div role="alert" className="task-error">
+            <span>{taskError}</span>
+            <button type="button" className="btn-secondary" onClick={loadTasks}>Retry</button>
+          </div>
+        )}
         {loading ? (
           <div style={{ padding: '3rem 0', textAlign: 'center', color: 'var(--text-secondary)' }}>
             <div style={{
@@ -314,7 +354,7 @@ function MainApp() {
             }} />
             <p style={{ fontSize: '0.85rem' }}>Syncing tasks...</p>
           </div>
-        ) : tasks.length === 0 ? (
+        ) : !taskError && tasks.length === 0 ? (
           <div style={{
             padding: '4rem 1.5rem',
             textAlign: 'center',
@@ -387,7 +427,8 @@ function MainApp() {
       {/* Floating AI Dev Assistant Trigger */}
       <button
         onClick={() => setIsDevChatbotOpen(true)}
-        className="btn-primary"
+        className="btn-primary assistant-fab"
+        aria-label="Open Qwen AI assistant"
         style={{
           position: 'fixed',
           bottom: '24px',

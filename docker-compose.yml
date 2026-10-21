@@ -1,60 +1,51 @@
-version: '3.8'
-
 services:
   postgres:
     image: postgres:16-alpine
-    container_name: planify-postgres
     restart: unless-stopped
     environment:
-      POSTGRES_DB: tododb
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: ${DB_NAME:-tododb}
+      POSTGRES_USER: ${DB_USER:-planify}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env}
     ports:
-      - "5433:5432"
+      - "127.0.0.1:5433:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
-      - ./backend/src/main/resources/db/migration/V1__init_schema.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./backend/src/main/resources/db/migration/V1__init_schema.sql:/docker-entrypoint-initdb.d/init.sql:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d tododb"]
+      test: ["CMD-SHELL", "pg_isready -U \"$$POSTGRES_USER\" -d \"$$POSTGRES_DB\""]
       interval: 5s
       timeout: 5s
-      retries: 5
+      retries: 10
 
   backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    container_name: planify-backend
+    build: ./backend
     restart: unless-stopped
     depends_on:
       postgres:
         condition: service_healthy
     ports:
-      - "8082:8082"
+      - "127.0.0.1:8082:8082"
     environment:
-      - SERVER_PORT=8082
-      - DB_HOST=postgres
-      - DB_PORT=5432
-      - DB_NAME=tododb
-      - DB_USER=postgres
-      - DB_PASSWORD=postgres
-      - OPENAI_API_KEY=${OPENAI_API_KEY:-sk-mdl-Axh6jn1UzhEss0ERIrAwRAuypUsgb1CmuQW_gaWZLBc}
-      - OPENAI_API_URL=${OPENAI_API_URL:-http://host.docker.internal:8000/v1/chat/completions}
-      - OPENAI_MODEL=${OPENAI_MODEL:-qwen3-1.7b}
-      - SPRING_PROFILES_ACTIVE=default
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_NAME: ${DB_NAME:-tododb}
+      DB_USER: ${DB_USER:-planify}
+      DB_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env}
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:?Set OPENAI_API_KEY in .env}
+      OPENAI_API_URL: ${OPENAI_API_URL:-http://host.docker.internal:8000/v1/chat/completions}
+      OPENAI_MODEL: ${OPENAI_MODEL:-qwen3-1.7b}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:5174,http://localhost:5173}
     extra_hosts:
       - "host.docker.internal:host-gateway"
 
   frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-    container_name: planify-frontend
+    build: ./frontend
     restart: unless-stopped
     depends_on:
       - backend
     ports:
-      - "5174:5174"
+      - "5174:80"
 
 volumes:
   pgdata:

@@ -316,7 +316,7 @@ function MainApp() {
                   className="btn-secondary"
                   style={{ padding: '0.65rem 1.25rem' }}
                 >
-                  <span>Sign In with Demo</span>
+                  <span>Sign In</span>
                 </button>
                 <button
                   onClick={() => isAuthenticated ? setIsAiDrawerOpen(true) : openAuthModal('login')}

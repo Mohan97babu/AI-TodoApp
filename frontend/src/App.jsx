@@ -10,6 +10,7 @@ import { TaskFilters } from './components/TaskFilters';
 import { TaskCard } from './components/TaskCard';
 import { TaskListToolbar } from './components/TaskListToolbar';
 import { sortTasks } from './utils/taskSort';
+import { filterTasks } from './utils/taskFilters';
 import { TaskEditModal } from './components/TaskEditModal';
 import { AiStudyPlannerDrawer } from './components/AiStudyPlannerDrawer';
 import { AiDevChatbotDrawer } from './components/AiDevChatbotDrawer';
@@ -108,11 +109,7 @@ function MainApp() {
     setLoading(true);
     setTaskError('');
     try {
-      const data = await taskService.getTasks({
-        status: activeStatus,
-        category: activeCategory,
-        search: debouncedSearch,
-      });
+      const data = await taskService.getTasks();
       setTasks(data || []);
     } catch (err) {
       console.error('Failed to load tasks:', err);
@@ -120,7 +117,7 @@ function MainApp() {
     } finally {
       setLoading(false);
     }
-  }, [isAuthenticated, activeStatus, activeCategory, debouncedSearch]);
+  }, [isAuthenticated]);
 
   useEffect(() => {
     loadTasks();
@@ -201,7 +198,11 @@ function MainApp() {
     refreshReminders();
   };
 
-  const sortedTasks = useMemo(() => sortTasks(tasks, sortBy), [tasks, sortBy]);
+  const visibleTasks = useMemo(
+    () => filterTasks(tasks, { status: activeStatus, category: activeCategory, search: debouncedSearch }),
+    [tasks, activeStatus, activeCategory, debouncedSearch]
+  );
+  const sortedTasks = useMemo(() => sortTasks(visibleTasks, sortBy), [visibleTasks, sortBy]);
 
   // Counts for filters
   const counts = {
@@ -358,7 +359,7 @@ function MainApp() {
           counts={counts}
         />
 
-        <TaskListToolbar count={tasks.length} sortBy={sortBy} onSortChange={setSortBy} />
+        <TaskListToolbar count={visibleTasks.length} sortBy={sortBy} onSortChange={setSortBy} />
 
         {/* Task List Section */}
         {taskError && (
@@ -380,7 +381,7 @@ function MainApp() {
             }} />
             <p style={{ fontSize: '0.85rem' }}>Syncing tasks...</p>
           </div>
-        ) : !taskError && tasks.length === 0 ? (
+        ) : !taskError && visibleTasks.length === 0 ? (
           <div style={{
             padding: '4rem 1.5rem',
             textAlign: 'center',

@@ -95,6 +95,21 @@ def main():
     status, _ = request("GET", "/api/tasks/" + str(task_id), token=first_token)
     expect(status, 404, "deleted task is not accessible")
 
+    status, ai_response = request("POST", "/api/ai/chat", {
+        "message": "Explain what a unit test is",
+        "history": [],
+        "sourcesEnabled": {
+            "geeksforgeeks": False,
+            "w3schools": False,
+            "tpointtech": False
+        }
+    }, first_token)
+    expect(status, 200, "authenticated chatbot proxy")
+    assert ai_response and ai_response.get("reply") == "CI simulated Qwen response", (
+        "Spring Boot did not connect to the CI model server: " + str(ai_response)
+    )
+    print("PASS OpenAI-compatible model routing through Spring Boot (CI simulator only)")
+
     print("PASS authenticated task lifecycle and tenant isolation")
 
 

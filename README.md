@@ -1,38 +1,35 @@
-# Planify | Creative Daily Planner & AI Study Architect
+# Planify | Creative Daily Planner & Dev/Study AI Assistant
 
-A modern, high-velocity daily planning and to-do application inspired by Adobe's creative visual aesthetics (Adobe Spectrum `#EB1000` crimson palette, fluid dark/light modes, micro-interactions). Built with **React 18**, **Spring Boot 3**, and **PostgreSQL 16**.
+A modern, high-velocity daily planning and to-do application inspired by Adobe's creative visual aesthetics (Adobe Spectrum `#EB1000` crimson palette, fluid dark/light modes, micro-interactions). Built with **React 18**, **Spring Boot 3**, **PostgreSQL 16 / H2**, and powered by a local **Qwen 3 (1.7B)** AI engine grounded in official knowledge from **GeeksforGeeks**, **W3Schools**, and **TPointTech**.
 
 ---
 
 ## 🌟 Key Features
 
-1. **Adobe Creative Aesthetics & Fluid Design**
-   - Signature bold red accent (`#EB1000`) with high-contrast dark slate (`#0D0D11`) and clean white canvas modes.
-   - Micro-animations: Smooth checkmark fill, confetti particles upon task completion, acrylic backdrop blurs, and responsive card layouts.
-   - Low-friction workflows: Inline 1-click task additions, quick options dropdown, and status toggles.
+### 1. 🤖 Local Qwen 3 (1.7B) AI Dev & Study Assistant
+- **Local Model Serving**: Direct GGUF inference serving `E:\model\qwen3-1.7b\Qwen3-1.7B-Q6_K.gguf` on `http://localhost:8000/v1` with Vulkan/CUDA GPU acceleration (>100 tokens/sec).
+- **API Key Security**: Fully authenticated OpenAI-compatible API Gateway secured with `sk-mdl-...` keys generated via `key_store.py`.
+- **Knowledge Grounding Engine**: Real-time integration with 3 leading developer and computer science platforms:
+  - 🟢 **GeeksforGeeks** (`https://www.geeksforgeeks.org/`): Data structures, algorithms, coding problems, interview roadmaps.
+  - 🟢 **W3Schools** (`https://www.w3schools.com/`): Web technologies, HTML5, CSS3 Flexbox/Grid, JavaScript, React.
+  - 🟠 **TPointTech** (`https://www.tpointtech.com/`): Java core, Spring Boot, OOPs, design patterns, microservices.
+- **Source Toggles**: Interactively enable or disable specific grounding sources in the drawer.
+- **Model Reasoning Display**: Collapsible chain-of-thought drawer to inspect Qwen 3's step-by-step thinking.
+- **1-Click "Add to To-Dos"**: Convert any suggested coding exercise, drill, or practice step directly into your daily planner with a single click.
 
-2. **Secure User Isolation & Authentication**
-   - Stateless JWT Bearer token authentication.
-   - Passwords securely hashed with BCrypt (strength 12).
-   - Strict tenant isolation: Every query enforces `WHERE user_id = :currentUserId` across tasks, reminders, and study plans.
+### 2. 📅 AI Study Plan Architect
+- Generates structured day-by-day learning roadmaps for any topic, duration (1-30 days), and skill level.
+- Interactive **Review & Edit Modal**: Customize day titles, focus themes, task descriptions, and time estimates.
+- **1-Click Schedule**: Automatically schedules tasks starting from your selected date and persists them to the database.
 
-3. **Task & Daily Planning Engine**
-   - Full CRUD operations with priority tags (`URGENT`, `HIGH`, `MEDIUM`, `LOW`), categories (`WORK`, `STUDY`, `PERSONAL`, `HEALTH`, `GENERAL`), and due dates.
-   - Status tracking: `PENDING`, `IN_PROGRESS`, `COMPLETED`, `CANCELLED`.
-   - Real-time search and multi-dimensional status/category filters with dynamic task count badges.
+### 3. 🎨 Adobe Spectrum Creative Aesthetics
+- Bold red accent (`#EB1000`) with high-contrast dark slate (`#0D0D11`) and clean white canvas modes.
+- Micro-animations: Confetti particles upon completion, smooth checkmark fills, floating assistant trigger (FAB), and glassmorphism.
 
-4. **Recurring Tasks & Scheduled Reminders**
-   - Automated recurrence rules: `DAILY`, `WEEKDAYS` (Mon-Fri), `WEEKLY`, `MONTHLY`.
-   - Spawns subsequent recurring tasks upon completion so historical records remain intact.
-   - Background notification scheduler (`NotificationScheduler.java`) polling every 30 seconds for due alerts.
-   - Dual-channel notifications: Browser Push (Web Notification API) and Web Audio API synthesized audio chimes.
-
-5. **AI Study Plan Architect & Chat Coach**
-   - Generates structured day-by-day learning roadmaps for any topic, duration (1-30 days), and skill level.
-   - Interactive **Review & Edit Modal**: Users can customize day titles, focus themes, edit task names/descriptions, adjust duration, add custom tasks, or remove items.
-   - 1-Click **"Confirm & Add to My To-Dos"**: Sequentially schedules all tasks starting from the selected start date and commits them to the database.
-   - Strategy Coach chatbot for active study guidance, active recall tips, and pomodoro pacing.
-   - Resilient hybrid backend: Works with OpenAI (`OPENAI_API_KEY`) and features an intelligent built-in curriculum generator fallback that operates offline.
+### 4. 🔒 Strict Multi-Tenant Security & Notifications
+- Stateless JWT Bearer token authentication and BCrypt (strength 12) passwords.
+- Strict isolation: All queries enforce `WHERE user_id = :currentUserId`.
+- Dual-channel notifications: Browser push alerts and Web Audio synthesized chimes.
 
 ---
 
@@ -40,114 +37,97 @@ A modern, high-velocity daily planning and to-do application inspired by Adobe's
 
 ```
 ├── backend/
-│   ├── pom.xml
+│   ├── mvnw.cmd                 # Portable Maven wrapper
 │   ├── Dockerfile
 │   └── src/main/
 │       ├── java/com/todoapp/
-│       │   ├── TodoApplication.java
-│       │   ├── config/          # Spring Security, JWT Filter, Scheduler
 │       │   ├── controller/      # Auth, Task, Reminder, AI Controllers
-│       │   ├── dto/             # Request & Response Data Transfer Objects
+│       │   ├── dto/             # Request & Response DTOs (ChatbotRequest, etc.)
 │       │   ├── entity/          # JPA Entities (User, Task, Reminder, StudyPlan)
-│       │   ├── repository/      # Spring Data JPA Repositories
-│       │   ├── service/         # Business logic, recurring engine, AI service
-│       │   └── exception/       # Global exception handler & custom exceptions
+│       │   ├── service/         # TaskService, WebKnowledgeService, AiChatbotService
+│       │   └── config/          # Spring Security, JWT Filter, Scheduler
 │       └── resources/
-│           ├── application.yml
+│           ├── application.yml  # Configured for Qwen3-1.7b & local model gateway
 │           └── db/migration/V1__init_schema.sql
 ├── frontend/
-│   ├── package.json
-│   ├── vite.config.js
-│   ├── index.html
-│   ├── Dockerfile
-│   └── src/
-│       ├── index.css            # Adobe Spectrum design tokens & animations
-│       ├── App.jsx              # Main workspace orchestrator
-│       ├── components/          # Navbar, TaskCard, QuickAdd, Modals, AI Drawer
-│       ├── context/             # AuthContext, NotificationContext
-│       └── services/            # API client, auth, tasks, AI, notifications
-└── docker-compose.yml           # PostgreSQL 16, Spring Boot & React services
+│   ├── src/
+│   │   ├── components/
+│   │   │   ├── AiDevChatbotDrawer.jsx   # Qwen 3 + GFG/W3S/TPointTech Chatbot
+│   │   │   ├── AiStudyPlannerDrawer.jsx # Curriculum generator drawer
+│   │   │   ├── Navbar.jsx               # Header with AI Dev Assistant trigger
+│   │   │   ├── TaskCard.jsx             # Interactive task cards
+│   │   │   └── QuickAddTask.jsx
+│   │   ├── services/
+│   │   │   ├── aiService.js             # Chatbot & model status client
+│   │   │   └── taskService.js
+│   │   └── index.css                    # Design tokens & micro-animations
+├── tools/
+│   └── apache-maven-3.9.6/      # Portable Maven runtime
+├── start.bat                    # 1-Click launcher (Model + Backend + Frontend)
+├── start.ps1                    # PowerShell 1-Click launcher
+└── docker-compose.yml           # PostgreSQL, Backend, Frontend
 ```
 
 ---
 
-## 🚀 Quick Start Guide
+## 🚀 Quick Start (Local Native)
 
-### Option 1: One-Command Run with Docker Compose (Recommended)
+### Option 1: 1-Click Launcher (Recommended)
 
-Make sure Docker is running on your machine:
-
-```bash
-# Start PostgreSQL, Spring Boot backend, and React frontend
-docker compose up --build -d
-
-# Check running status
-docker compose ps
+Simply double-click or run:
+```cmd
+start.bat
 ```
-
-- **Frontend Application**: `http://localhost:5174`
-- **Backend REST API**: `http://localhost:8080`
-- **PostgreSQL Database**: `localhost:5433` (DB: `tododb`, User: `postgres`, Password: `postgres`)
+This automatically starts:
+1. **Local Model Server** on `http://localhost:8000` (serving `qwen3-1.7b`)
+2. **Spring Boot Backend** on `http://localhost:8082`
+3. **React Frontend** on `http://localhost:5174`
+4. Automatically opens `http://localhost:5174` in your default browser!
 
 ---
 
-### Option 2: Local Development (Native)
+### Option 2: Step-by-Step Manual Launch
 
-#### Prerequisites
-- Java 17+ (e.g. JDK 17, 18, or 21)
-- Apache Maven 3.8+
-- Node.js 18+ and npm
-- PostgreSQL 16 (or Docker container running PostgreSQL on port 5433 or 5432)
-
-#### 1. Start PostgreSQL Database
+#### 1. Start the Local Model Server
 ```bash
-docker run -d --name planify-postgres -e POSTGRES_DB=tododb -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=postgres -p 5433:5432 postgres:16-alpine
+cd E:\model
+python run_server.py --host 0.0.0.0 --port 8000 --no-browser
 ```
 
-#### 2. Run the Spring Boot Backend
-```bash
+#### 2. Start the Spring Boot Backend
+```cmd
 cd backend
-mvn spring-boot:run
+mvnw.cmd spring-boot:run -Dspring-boot.run.profiles=h2
 ```
-*Note: To run with the lightweight in-memory H2 database (zero installation needed), simply activate the H2 profile:*
-```bash
-mvn spring-boot:run -Dspring-boot.run.profiles=h2
-```
+Backend will be live on `http://localhost:8082`.
 
-#### 3. Run the React Frontend
+#### 3. Start the React Frontend
 ```bash
 cd frontend
-npm install
 npm run dev
 ```
-Open `http://localhost:5174` in your browser.
+Frontend will be live on `http://localhost:5174`.
 
 ---
 
-## 🔐 Demo Credentials
+## 🔑 Model & API Key Configuration
 
-You can instantly register your own account or click the **"Auto-Fill Demo Credentials"** button in the sign-in modal:
-- **Username**: `creative_designer`
-- **Password**: `AdobeCreative2026!`
-- **Email**: `designer@adobe.creative`
+| Parameter | Value |
+|---|---|
+| **Model Path** | `E:\model\qwen3-1.7b\Qwen3-1.7B-Q6_K.gguf` |
+| **Model ID** | `qwen3-1.7b` |
+| **Gateway Base URL** | `http://localhost:8000/v1` |
+| **Planify API Key** | `sk-mdl-Axh6jn1UzhEss0ERIrAwRAuypUsgb1CmuQW_gaWZLBc` |
+| **Grounding Sources** | GeeksforGeeks, W3Schools, TPointTech |
 
 ---
 
-## 📡 REST API Reference
+## 🐳 Docker Deployment
 
-| Method | Endpoint | Description | Auth Required |
-|---|---|---|---|
-| `POST` | `/api/auth/register` | Register new user account | No |
-| `POST` | `/api/auth/login` | Authenticate and retrieve JWT token | No |
-| `GET` | `/api/auth/me` | Fetch authenticated user profile | Yes |
-| `GET` | `/api/tasks` | List tasks (supports `status`, `category`, `search`) | Yes |
-| `POST` | `/api/tasks` | Create a new task with due date & recurrence | Yes |
-| `GET` | `/api/tasks/{id}` | Retrieve specific task (isolated to owner) | Yes |
-| `PUT` | `/api/tasks/{id}` | Update task title, description, priority, etc. | Yes |
-| `PATCH` | `/api/tasks/{id}/status` | Update task status (handles recurring spawn) | Yes |
-| `DELETE` | `/api/tasks/{id}` | Delete task | Yes |
-| `POST` | `/api/tasks/batch` | Batch create tasks (from AI study plan) | Yes |
-| `GET` | `/api/reminders/upcoming` | Fetch pending upcoming reminders | Yes |
-| `PATCH` | `/api/reminders/{id}/dismiss` | Dismiss an active reminder alert | Yes |
-| `POST` | `/api/ai/study-plan` | Generate day-by-day study roadmap | Yes |
-| `POST` | `/api/ai/chat` | Chat coaching assistant response | Yes |
+To run containerized services:
+```bash
+docker compose up --build -d
+```
+- Frontend: `http://localhost:5174`
+- Backend: `http://localhost:8082`
+- PostgreSQL: `localhost:5433` (Database: `tododb`)

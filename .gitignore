@@ -1,0 +1,23 @@
+# Environments & IDEs
+.idea/
+.vscode/
+*.iml
+*.log
+
+# Maven & Build
+target/
+backend/target/
+tools/
+*.class
+
+# Node & Frontend
+node_modules/
+frontend/node_modules/
+frontend/dist/
+.DS_Store
+
+# Local Model weights / venv
+venv/
+.venv/
+__pycache__/
+*.db

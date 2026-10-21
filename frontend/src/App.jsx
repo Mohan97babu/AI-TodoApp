@@ -9,9 +9,11 @@ import { TaskFilters } from './components/TaskFilters';
 import { TaskCard } from './components/TaskCard';
 import { TaskEditModal } from './components/TaskEditModal';
 import { AiStudyPlannerDrawer } from './components/AiStudyPlannerDrawer';
+import { AiDevChatbotDrawer } from './components/AiDevChatbotDrawer';
 import { StudyPlanModal } from './components/StudyPlanModal';
 import { taskService } from './services/taskService';
-import { Sparkles, CheckCircle2, AlertTriangle, X, Plus, Layers, Inbox } from 'lucide-react';
+import { aiService } from './services/aiService';
+import { Sparkles, CheckCircle2, AlertTriangle, X, Plus, Layers, Inbox, Bot } from 'lucide-react';
 
 function MainApp() {
   const { user, isAuthenticated, openAuthModal } = useAuth();
@@ -29,10 +31,27 @@ function MainApp() {
 
   // Modals state
   const [isAiDrawerOpen, setIsAiDrawerOpen] = useState(false);
+  const [isDevChatbotOpen, setIsDevChatbotOpen] = useState(false);
+  const [modelStatus, setModelStatus] = useState(null);
   const [reviewedPlan, setReviewedPlan] = useState(null);
   const [isPlanModalOpen, setIsPlanModalOpen] = useState(false);
   const [editingTask, setEditingTask] = useState(null);
   const [toastMessage, setToastMessage] = useState('');
+
+  // Fetch AI model gateway health
+  useEffect(() => {
+    const fetchStatus = async () => {
+      try {
+        const res = await aiService.getModelStatus();
+        setModelStatus(res);
+      } catch (e) {
+        setModelStatus({ connected: false, status: 'OFFLINE' });
+      }
+    };
+    fetchStatus();
+    const interval = setInterval(fetchStatus, 30000);
+    return () => clearInterval(interval);
+  }, []);
 
   // Apply theme class to document
   useEffect(() => {
@@ -148,6 +167,8 @@ function MainApp() {
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       <Navbar
         onOpenAiPlanner={() => setIsAiDrawerOpen(true)}
+        onOpenDevChatbot={() => setIsDevChatbotOpen(true)}
+        modelStatus={modelStatus}
         theme={theme}
         onToggleTheme={toggleTheme}
       />
@@ -357,6 +378,44 @@ function MainApp() {
         onClose={() => setIsPlanModalOpen(false)}
         onConfirmPlan={handleConfirmPlan}
       />
+      <AiDevChatbotDrawer
+        isOpen={isDevChatbotOpen}
+        onClose={() => setIsDevChatbotOpen(false)}
+        onAddTask={handleAddTask}
+      />
+
+      {/* Floating AI Dev Assistant Trigger */}
+      <button
+        onClick={() => setIsDevChatbotOpen(true)}
+        className="btn-primary"
+        style={{
+          position: 'fixed',
+          bottom: '24px',
+          right: '24px',
+          zIndex: 35,
+          padding: '0.75rem 1.15rem',
+          borderRadius: '100px',
+          boxShadow: '0 8px 24px rgba(235, 16, 0, 0.45)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+          fontWeight: 700,
+          fontSize: '0.875rem',
+          border: '1px solid rgba(255, 255, 255, 0.2)',
+          cursor: 'pointer',
+        }}
+        title="Open Dev & Study AI Assistant (Qwen 3)"
+      >
+        <Bot size={18} />
+        <span>Ask Qwen 3 AI</span>
+        <span style={{
+          width: '7px',
+          height: '7px',
+          borderRadius: '50%',
+          backgroundColor: modelStatus?.connected ? '#22C55E' : '#F59E0B',
+          boxShadow: modelStatus?.connected ? '0 0 6px #22C55E' : 'none',
+        }} />
+      </button>
     </div>
   );
 }

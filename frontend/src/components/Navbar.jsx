@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNotifications } from '../context/NotificationContext';
-import { Sparkles, Bell, Sun, Moon, LogIn, LogOut, CheckCircle2, User, X } from 'lucide-react';
+import { Sparkles, Bell, Sun, Moon, LogIn, LogOut, CheckCircle2, User, X, Bot, Globe } from 'lucide-react';
 
-export function Navbar({ onOpenAiPlanner, theme, onToggleTheme }) {
+export function Navbar({ onOpenAiPlanner, onOpenDevChatbot, modelStatus, theme, onToggleTheme }) {
   const { user, isAuthenticated, logout, openAuthModal } = useAuth();
   const { reminders, dismissReminder, requestBrowserPermission } = useNotifications();
   const [showNotifications, setShowNotifications] = useState(false);
@@ -59,6 +59,34 @@ export function Navbar({ onOpenAiPlanner, theme, onToggleTheme }) {
 
         {/* Center / Actions */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          {/* AI Dev Assistant Button */}
+          <button
+            onClick={onOpenDevChatbot}
+            className="btn-secondary"
+            style={{
+              padding: '0.5rem 0.95rem',
+              fontSize: '0.85rem',
+              borderRadius: 'var(--radius-full)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              border: '1px solid var(--border-subtle)',
+              position: 'relative',
+            }}
+            title="Ask Qwen 3 AI (GeeksforGeeks, W3Schools, TPointTech)"
+          >
+            <Bot size={16} style={{ color: '#EB1000' }} />
+            <span style={{ fontWeight: 600 }}>AI Dev Assistant</span>
+            <span style={{
+              width: '6px',
+              height: '6px',
+              borderRadius: '50%',
+              backgroundColor: modelStatus?.connected ? '#22C55E' : '#F59E0B',
+              boxShadow: modelStatus?.connected ? '0 0 6px #22C55E' : 'none',
+              display: 'inline-block',
+            }} />
+          </button>
+
           {/* AI Study Plan Button */}
           <button
             onClick={onOpenAiPlanner}

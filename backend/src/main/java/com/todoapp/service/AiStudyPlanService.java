@@ -119,6 +119,23 @@ public class AiStudyPlanService {
         if (apiResponse.getStatusCode().is2xxSuccessful() && apiResponse.getBody() != null) {
             JsonNode root = objectMapper.readTree(apiResponse.getBody());
             String content = root.path("choices").get(0).path("message").path("content").asText();
+            
+            if (content.contains("<think>")) {
+                int end = content.indexOf("</think>");
+                if (end != -1) {
+                    content = content.substring(end + 8).trim();
+                }
+            }
+            if (content.startsWith("```json")) {
+                content = content.substring(7);
+            } else if (content.startsWith("```")) {
+                content = content.substring(3);
+            }
+            if (content.endsWith("```")) {
+                content = content.substring(0, content.length() - 3);
+            }
+            content = content.trim();
+
             JsonNode planJson = objectMapper.readTree(content);
 
             StudyPlanResponse planResponse = new StudyPlanResponse();

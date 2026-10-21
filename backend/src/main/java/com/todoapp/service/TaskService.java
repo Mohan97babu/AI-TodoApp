@@ -63,7 +63,8 @@ public class TaskService {
         applyCreateRequestToEntity(request, task);
 
         if (request.getStudyPlanId() != null) {
-            studyPlanRepository.findById(request.getStudyPlanId()).ifPresent(task::setStudyPlan);
+            task.setStudyPlan(studyPlanRepository.findByIdAndUserId(request.getStudyPlanId(), userId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Study plan not found")));
         }
 
         task = taskRepository.save(task);
@@ -190,7 +191,8 @@ public class TaskService {
 
         StudyPlan plan = null;
         if (request.getStudyPlanId() != null) {
-            plan = studyPlanRepository.findById(request.getStudyPlanId()).orElse(null);
+            plan = studyPlanRepository.findByIdAndUserId(request.getStudyPlanId(), userId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Study plan not found"));
         }
 
         List<Task> createdTasks = new ArrayList<>();

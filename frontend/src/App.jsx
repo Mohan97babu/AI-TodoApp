@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { NotificationProvider, useNotifications } from './context/NotificationContext';
 import { Navbar } from './components/Navbar';
@@ -8,6 +8,7 @@ import { DashboardWelcome } from './components/DashboardWelcome';
 import { QuickAddTask } from './components/QuickAddTask';
 import { TaskFilters } from './components/TaskFilters';
 import { TaskCard } from './components/TaskCard';
+import { TaskListToolbar, sortTasks } from './components/TaskListToolbar';
 import { TaskEditModal } from './components/TaskEditModal';
 import { AiStudyPlannerDrawer } from './components/AiStudyPlannerDrawer';
 import { AiDevChatbotDrawer } from './components/AiDevChatbotDrawer';
@@ -31,6 +32,7 @@ function MainApp() {
   const [activeStatus, setActiveStatus] = useState('ALL');
   const [activeCategory, setActiveCategory] = useState('ALL');
   const [searchQuery, setSearchQuery] = useState('');
+  const [sortBy, setSortBy] = useState(() => localStorage.getItem('planify_task_sort') || 'DUE_SOON');
 
   // Modals state
   const [isAiDrawerOpen, setIsAiDrawerOpen] = useState(false);
@@ -40,6 +42,25 @@ function MainApp() {
   const [isPlanModalOpen, setIsPlanModalOpen] = useState(false);
   const [editingTask, setEditingTask] = useState(null);
   const [toastMessage, setToastMessage] = useState('');
+
+  useEffect(() => {
+    localStorage.setItem('planify_task_sort', sortBy);
+  }, [sortBy]);
+
+  // Keyboard shortcut: N focuses the new-task field when not typing elsewhere.
+  useEffect(() => {
+    const onKeyDown = (event) => {
+      const target = event.target;
+      if (event.key.toLowerCase() !== 'n' || event.ctrlKey || event.altKey || event.metaKey || event.repeat ||
+          target?.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target?.tagName)) return;
+      if (isAuthenticated && !isAiDrawerOpen && !isDevChatbotOpen && !isPlanModalOpen && !editingTask) {
+        document.getElementById('quick-add-title')?.focus();
+        event.preventDefault();
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [isAuthenticated, isAiDrawerOpen, isDevChatbotOpen, isPlanModalOpen, editingTask]);
 
   // Fetch AI model gateway health
   useEffect(() => {
@@ -178,6 +199,8 @@ function MainApp() {
     loadTasks();
     refreshReminders();
   };
+
+  const sortedTasks = useMemo(() => sortTasks(tasks, sortBy), [tasks, sortBy]);
 
   // Counts for filters
   const counts = {
@@ -334,6 +357,8 @@ function MainApp() {
           counts={counts}
         />
 
+        <TaskListToolbar count={tasks.length} sortBy={sortBy} onSortChange={setSortBy} />
+
         {/* Task List Section */}
         {taskError && (
           <div role="alert" className="task-error">
@@ -386,7 +411,7 @@ function MainApp() {
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
-            {tasks.map((task) => (
+            {sortedTasks.map((task) => (
               <TaskCard
                 key={task.id}
                 task={task}
@@ -419,6 +444,7 @@ function MainApp() {
         onConfirmPlan={handleConfirmPlan}
       />
       <AiDevChatbotDrawer
+        key={user?.id || user?.username || 'guest'}
         isOpen={isDevChatbotOpen}
         onClose={() => setIsDevChatbotOpen(false)}
         onAddTask={handleAddTask}

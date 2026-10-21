@@ -24,6 +24,11 @@ else
   echo "Using existing .env; no credentials were overwritten."
 fi
 
+if grep -E '^(DB_PASSWORD|JWT_SECRET)=CHANGE_ME' .env >/dev/null; then
+  echo "ERROR: replace DB_PASSWORD and JWT_SECRET placeholders in .env first." >&2
+  exit 1
+fi
+
 docker compose config --quiet
 echo "Starting PostgreSQL, backend, frontend and Ollama (downloads Qwen3 once into Docker volume)..."
 docker compose up --build -d

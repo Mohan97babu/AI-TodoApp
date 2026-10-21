@@ -76,6 +76,7 @@ export function QuickAddTask({ onAddTask }) {
           </div>
 
           <input
+            id="quick-add-title"
             type="text"
             placeholder="Add a new task... (press Enter or configure below)"
             aria-label="New task title"

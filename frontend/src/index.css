@@ -10,6 +10,9 @@
   /* Charcoal Dark Slate Theme */
   --bg-canvas: #0D0D11;
   --bg-surface: #15151B;
+  --bg-elevated: #1F1F27;
+  --primary-color: #EB1000;
+  --shadow-inner: inset 0 1px 2px rgba(0, 0, 0, .12);
   --bg-surface-elevated: #1F1F27;
   --bg-surface-card: #181820;
   --bg-surface-hover: #252532;
@@ -53,6 +56,8 @@
 [data-theme='light'] {
   --bg-canvas: #F8F9FA;
   --bg-surface: #FFFFFF;
+  --bg-elevated: #F1F2F5;
+  --primary-color: #EB1000;
   --bg-surface-elevated: #F1F2F5;
   --bg-surface-card: #FFFFFF;
   --bg-surface-hover: #F4F5F8;
@@ -368,3 +373,5 @@ input:focus-visible, select:focus-visible, textarea:focus-visible {
   .task-list-toolbar { gap: .6rem; }
   .task-sort-label { width: 100%; justify-content: flex-end; }
 }
+
+.task-sort-label select:focus-visible { outline: 2px solid var(--adobe-red); outline-offset: 3px; }

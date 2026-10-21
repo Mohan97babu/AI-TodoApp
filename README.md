@@ -72,9 +72,9 @@ A modern, high-velocity daily planning and to-do application inspired by Adobe's
 
 ## 🚀 Quick Start (Local Native)
 
-### Option 1: 1-Click Launcher (Recommended)
+### Option 1: Local Windows launcher
 
-Simply double-click or run:
+Copy `.env.example` to `.env` and set a random `JWT_SECRET` plus your local gateway token before starting. Ensure Java 17+, Maven, Node.js, npm and Python are available. Then run:
 ```cmd
 start.bat
 ```
@@ -82,7 +82,7 @@ This automatically starts:
 1. **Local Model Server** on `http://localhost:8000` (serving `qwen3-1.7b`)
 2. **Spring Boot Backend** on `http://localhost:8082`
 3. **React Frontend** on `http://localhost:5174`
-4. Automatically opens `http://localhost:5174` in your default browser!
+4. Open `http://localhost:5174` in your browser after the service windows start.
 
 ---
 
@@ -91,19 +91,20 @@ This automatically starts:
 #### 1. Start the Local Model Server
 ```bash
 cd E:\model
-python run_server.py --host 0.0.0.0 --port 8000 --no-browser
+python run_server.py --host 127.0.0.1 --port 8000 --no-browser
 ```
 
 #### 2. Start the Spring Boot Backend
 ```cmd
 cd backend
-mvnw.cmd spring-boot:run -Dspring-boot.run.profiles=h2
+mvn spring-boot:run -Dspring-boot.run.profiles=h2
 ```
 Backend will be live on `http://localhost:8082`.
 
 #### 3. Start the React Frontend
 ```bash
 cd frontend
+npm ci
 npm run dev
 ```
 Frontend will be live on `http://localhost:5174`.
@@ -117,14 +118,14 @@ Frontend will be live on `http://localhost:5174`.
 | **Model Path** | `E:\model\qwen3-1.7b\Qwen3-1.7B-Q6_K.gguf` |
 | **Model ID** | `qwen3-1.7b` |
 | **Gateway Base URL** | `http://localhost:8000/v1` |
-| **Planify API Key** | `[SET_IN_ENV]` |
+| **Local Model Gateway API Key** | `[SET_IN_ENV]` |
 | **Grounding Sources** | GeeksforGeeks, W3Schools, TPointTech |
 
 ---
 
 ## 🐳 Docker Deployment
 
-To run containerized services:
+To run containerized services, first create `.env` with strong values as described below:
 ```bash
 docker compose up --build -d
 ```
@@ -143,3 +144,7 @@ docker compose up --build -d
 6. API chat and study planning require login; model status and health remain public.
 
 Run `cd frontend && npm ci && npm run build` and `cd backend && mvn -B test package` before release.
+
+**Existing PostgreSQL volumes:** Changing `DB_USER` or `DB_PASSWORD` in Compose does not update credentials inside an already-initialized database. Back up data and migrate credentials before switching an existing deployment; do not delete production volumes just to reset a password.
+
+**Release gate:** CI runs React tests/build, Maven verification, configuration/secret scans, and a Docker smoke test. HTTPS, backups, database migrations, monitoring, and access policies must still be configured for a public production environment. Never expose the model gateway directly to the internet.

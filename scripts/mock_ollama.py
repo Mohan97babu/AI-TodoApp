@@ -15,13 +15,33 @@ class Handler(BaseHTTPRequestHandler):
         if self.path != "/v1/chat/completions":
             self.reply(404, {"error": "not found"})
             return
-        count = int(self.headers.get("Content-Length", "0"))
-        if count > 65536:
-            self.reply(413, {"error": "request too large"})
-            return
+        # Spring Boot's HttpURLConnection may use HTTP/1.1 chunked transfer
+        # encoding instead of sending a Content-Length header.
         try:
-            obj = json.loads(self.rfile.read(count))
-        except (ValueError, UnicodeDecodeError):
+            if "chunked" in self.headers.get("Transfer-Encoding", "").lower():
+                body = bytearray()
+                while True:
+                    size_text = self.rfile.readline().strip().split(b";", 1)[0]
+                    size = int(size_text, 16)
+                    if size == 0:
+                        # Consume optional HTTP trailers.
+                        while self.rfile.readline().strip():
+                            pass
+                        break
+                    if len(body) + size > 65536:
+                        self.reply(413, {"error": "request too large"})
+                        return
+                    body.extend(self.rfile.read(size))
+                    self.rfile.read(2)  # trailing CRLF
+                payload = bytes(body)
+            else:
+                count = int(self.headers.get("Content-Length", "0"))
+                if count > 65536:
+                    self.reply(413, {"error": "request too large"})
+                    return
+                payload = self.rfile.read(count)
+            obj = json.loads(payload)
+        except (ValueError, UnicodeDecodeError, OSError):
             self.reply(400, {"error": "invalid json"})
             return
         if obj.get("model") != "qwen3:1.7b" or not obj.get("messages"):

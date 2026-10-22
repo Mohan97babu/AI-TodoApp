@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNotifications } from '../context/NotificationContext';
-import { Sparkles, Bell, Sun, Moon, LogIn, LogOut, CheckCircle2, User, X, Bot, Globe } from 'lucide-react';
+import { Sparkles, Bell, Sun, Moon, LogIn, LogOut, CheckCircle2, User, X, Bot, Globe, Search } from 'lucide-react';
 
-export function Navbar({ onOpenAiPlanner, onOpenDevChatbot, modelStatus, theme, onToggleTheme }) {
+export function Navbar({ onOpenAiPlanner, onOpenDevChatbot, modelStatus, theme, onToggleTheme, searchQuery = '', onSearchChange }) {
   const { user, isAuthenticated, logout, openAuthModal } = useAuth();
   const { reminders, dismissReminder, requestBrowserPermission } = useNotifications();
   const [showNotifications, setShowNotifications] = useState(false);
@@ -20,7 +20,7 @@ export function Navbar({ onOpenAiPlanner, onOpenDevChatbot, modelStatus, theme, 
       boxShadow: 'var(--shadow-sm)'
     }}>
       <div className="app-nav-inner" style={{
-        maxWidth: '1320px',
+        maxWidth: '100%',
         margin: '0 auto',
         padding: '0.85rem 1.25rem',
         display: 'flex',
@@ -52,11 +52,26 @@ export function Navbar({ onOpenAiPlanner, onOpenDevChatbot, modelStatus, theme, 
               
             </div>
             <p className="nav-brand-description" style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '-2px' }}>
-              Tasks and learning, organized
+              Your tasks. Your momentum.
             </p>
           </div>
         </div>
 
+        {/* Search is linked to the existing task filter; no decorative field. */}
+        {isAuthenticated && (
+          <label className="nav-global-search">
+            <Search size={17} aria-hidden="true" />
+            <span className="sr-only">Search your tasks</span>
+            <input
+              type="search"
+              value={searchQuery}
+              onChange={(event) => onSearchChange?.(event.target.value)}
+              aria-label="Search your tasks"
+              placeholder="Search your tasks..."
+            />
+            <span className="nav-search-hint" aria-hidden="true">Tasks</span>
+          </label>
+        )}
         {/* Center / Actions */}
         <div className="app-nav-actions" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
           {/* AI Dev Assistant Button */}
@@ -73,7 +88,7 @@ export function Navbar({ onOpenAiPlanner, onOpenDevChatbot, modelStatus, theme, 
               border: '1px solid var(--border-subtle)',
               position: 'relative',
             }}
-            title="Ask Qwen 3 AI (GeeksforGeeks, W3Schools, TPointTech)"
+            title="Open private Qwen assistant"
           >
             <Bot size={16} style={{ color: '#EB1000' }} />
             <span className="nav-action-label" style={{ fontWeight: 600 }}>AI Dev Assistant</span>

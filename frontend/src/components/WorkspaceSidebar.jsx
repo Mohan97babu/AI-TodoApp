@@ -1,14 +1,14 @@
 import React from 'react';
-import { House, ListTodo, Sparkles, Bot, CircleCheck, BarChart3, BookOpen, Activity } from 'lucide-react';
+import { Home, ListTodo, Sparkles, Bot, CheckCircle2, BarChart3, BookOpen, Activity } from 'lucide-react';
 
 /** Real navigation only: every entry opens a working feature or an existing view. */
 export function WorkspaceSidebar({ activeView = 'overview', onNavigate, onOpenPlanner, onOpenAssistant, modelStatus, counts = {} }) {
   const items = [
-    { id: 'overview', label: 'Dashboard', Icon: House, onClick: () => onNavigate('overview') },
+    { id: 'overview', label: 'Dashboard', Icon: Home, onClick: () => onNavigate('overview') },
     { id: 'tasks', label: 'My Tasks', Icon: ListTodo, onClick: () => onNavigate('tasks') },
     { id: 'planner', label: 'Study Planner', Icon: Sparkles, onClick: onOpenPlanner },
     { id: 'assistant', label: 'AI Dev Assistant', Icon: Bot, onClick: onOpenAssistant },
-    { id: 'completed', label: 'Completed', Icon: CircleCheck, onClick: () => onNavigate('completed') },
+    { id: 'completed', label: 'Completed', Icon: CheckCircle2, onClick: () => onNavigate('completed') },
     { id: 'progress', label: 'My Progress', Icon: BarChart3, onClick: () => onNavigate('progress') },
   ];
 

@@ -19,16 +19,9 @@ export function AiDevChatbotDrawer({ isOpen, onClose, onAddTask, docked = false 
       {
         id: 'welcome',
         role: 'assistant',
-        content: `👋 **Welcome to Planify Dev & Study Assistant!**\n\nI can answer using your **Qwen 3 (1.7B)** model and a small built-in programming reference catalog. Related links to **GeeksforGeeks**, **W3Schools**, and **TPointTech** are suggestions, not live-verified webpage results.\n\nAsk me anything about:\n- 🚀 **Algorithms & Data Structures** (Binary Search, Trees, DP)\n- 💻 **Web Engineering** (CSS Flexbox/Grid, React Hooks, JavaScript)\n- ⚙️ **Backend Architecture** (Spring Boot, REST APIs, Java Collections)\n- 🗄️ **Databases & DevOps** (SQL Joins, Docker, JWT Security)\n\nYou can also click **"+ Add to To-Dos"** on any recommended exercise to instantly schedule it into your planner!`,
-        sources: [
-          { site: 'GeeksforGeeks', title: 'GeeksforGeeks Portal', url: 'https://www.geeksforgeeks.org/' },
-          { site: 'W3Schools', title: 'W3Schools Tutorials', url: 'https://www.w3schools.com/' },
-          { site: 'TPointTech', title: 'TPointTech Learning Hub', url: 'https://www.tpointtech.com/' },
-        ],
-        suggestedTasks: [
-          { title: 'Practice Binary Search on GeeksforGeeks', description: 'Solve standard binary search problems', priority: 'HIGH', category: 'STUDY', estimatedMinutes: 45 },
-          { title: 'Build a Flexbox Card Component', description: 'Create responsive card layout using W3Schools guide', priority: 'MEDIUM', category: 'STUDY', estimatedMinutes: 30 }
-        ]
+        content: "Hi! Ask me about coding or studying. I can help you understand a topic and suggest practice tasks. Learning links are optional and not live-verified.",
+        sources: [],
+        suggestedTasks: []
       }
     ];
   });
@@ -48,15 +41,37 @@ export function AiDevChatbotDrawer({ isOpen, onClose, onAddTask, docked = false 
   });
 
   const messagesEndRef = useRef(null);
+  const dialogRef = useRef(null);
 
   useEffect(() => {
     if (!isOpen) return;
-    const closeOnEscape = (event) => {
-      if (event.key === 'Escape') onClose();
+    const previousFocus = document.activeElement;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const frame = window.requestAnimationFrame(() =>
+      dialogRef.current?.querySelector('input[aria-label="Ask the AI assistant a question"]')?.focus()
+    );
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') { event.preventDefault(); onClose(); }
+      if (event.key !== 'Tab' || !dialogRef.current) return;
+      const nodes = [...dialogRef.current.querySelectorAll('button:not([disabled]), input:not([disabled]), a[href], summary, select, textarea')]
+        .filter(node => node.getClientRects().length > 0);
+      if (!nodes.length) return;
+      const first = nodes[0], last = nodes[nodes.length - 1];
+      if (event.shiftKey && (document.activeElement === first || !dialogRef.current.contains(document.activeElement))) {
+        event.preventDefault(); last.focus();
+      } else if (!event.shiftKey && (document.activeElement === last || !dialogRef.current.contains(document.activeElement))) {
+        event.preventDefault(); first.focus();
+      }
     };
-    document.addEventListener('keydown', closeOnEscape);
-    return () => document.removeEventListener('keydown', closeOnEscape);
-  }, [isOpen, onClose]);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.cancelAnimationFrame(frame);
+      document.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = previousOverflow;
+      previousFocus?.focus?.();
+    };
+  }, [isOpen]);
 
   // Auto-scroll
   useEffect(() => {
@@ -210,9 +225,9 @@ export function AiDevChatbotDrawer({ isOpen, onClose, onAddTask, docked = false 
       zIndex: 95,
       animation: 'fadeIn 0.2s ease',
     }}>
-      <div className="chat-panel" role="dialog" aria-modal={!docked} aria-label="Dev and Study AI Assistant" style={{
+      <div ref={dialogRef} className="chat-panel" role="dialog" aria-modal={!docked} aria-label="Dev and Study AI Assistant" style={{
         width: '100%',
-        maxWidth: '680px',
+        maxWidth: '480px',
         height: '100%',
         backgroundColor: 'var(--bg-surface)',
         borderLeft: '1px solid var(--border-subtle)',
@@ -308,22 +323,9 @@ export function AiDevChatbotDrawer({ isOpen, onClose, onAddTask, docked = false 
           </div>
         </div>
 
-        {/* Website Knowledge Toggles Bar */}
-        <div style={{
-          padding: '0.6rem 1.25rem',
-          backgroundColor: 'var(--bg-canvas)',
-          borderBottom: '1px solid var(--border-subtle)',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '0.5rem',
-          flexWrap: 'wrap',
-          fontSize: '0.75rem',
-        }}>
-          <span style={{ color: 'var(--text-secondary)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
-            <Globe size={13} />
-            Suggested learning links:
-          </span>
-
+        <details className="minimal-reference-options">
+          <summary><Globe size={15} aria-hidden="true" /> Suggested learning links <span>Optional</span></summary>
+          <div className="minimal-reference-controls">
           {/* GeeksforGeeks Toggle */}
           <button
             onClick={() => toggleSource('geeksforgeeks')}
@@ -395,7 +397,8 @@ export function AiDevChatbotDrawer({ isOpen, onClose, onAddTask, docked = false 
             {sourcesEnabled.tpointtech && <Check size={12} />}
             TPointTech
           </button>
-        </div>
+          </div>
+        </details>
 
         {/* Messages Feed */}
         <div role="log" aria-live="polite" aria-relevant="additions text" className="chat-message-feed" style={{

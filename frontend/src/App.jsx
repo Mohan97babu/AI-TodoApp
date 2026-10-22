@@ -479,9 +479,9 @@ function MainApp() {
             ))}
           </div>
         )}
+        </section>
           </>
         )}
-      </section>
       </main>
       </div>
 

@@ -5,6 +5,7 @@ import { Navbar } from './components/Navbar';
 import { AuthModal } from './components/AuthModal';
 import { StatsOverview } from './components/StatsOverview';
 import { DashboardWelcome } from './components/DashboardWelcome';
+import { WorkspaceSidebar } from './components/WorkspaceSidebar';
 import { QuickAddTask } from './components/QuickAddTask';
 import { TaskFilters } from './components/TaskFilters';
 import { TaskCard } from './components/TaskCard';
@@ -38,7 +39,8 @@ function MainApp() {
 
   // Modals state
   const [isAiDrawerOpen, setIsAiDrawerOpen] = useState(false);
-  const [isDevChatbotOpen, setIsDevChatbotOpen] = useState(false);
+  const [isDevChatbotOpen, setIsDevChatbotOpen] = useState(() => typeof window !== 'undefined' && window.innerWidth >= 1380);
+  const [activeView, setActiveView] = useState('overview');
   const [modelStatus, setModelStatus] = useState(null);
   const [reviewedPlan, setReviewedPlan] = useState(null);
   const [isPlanModalOpen, setIsPlanModalOpen] = useState(false);
@@ -212,14 +214,36 @@ function MainApp() {
     completed: tasks.filter((t) => t.status === 'COMPLETED').length,
   };
 
+  const navigateWorkspace = (view) => {
+    setActiveView(view);
+    if (view === 'overview') {
+      setActiveStatus('ALL'); setActiveCategory('ALL'); setSearchQuery('');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+    if (view === 'completed') {
+      setActiveStatus('COMPLETED'); setActiveCategory('ALL'); setSearchQuery('');
+    } else if (view === 'tasks') setActiveStatus('ALL');
+    window.requestAnimationFrame(() =>
+      document.getElementById(view === 'progress' ? 'workspace-progress' : 'workspace-tasks')
+        ?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+  };
+  const focusNewTask = () => {
+    setActiveView('tasks');
+    document.getElementById('quick-add-title')?.focus();
+    document.getElementById('workspace-tasks')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+    <div className="planify-root" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       <Navbar
         onOpenAiPlanner={() => isAuthenticated ? setIsAiDrawerOpen(true) : openAuthModal('login')}
         onOpenDevChatbot={() => isAuthenticated ? setIsDevChatbotOpen(true) : openAuthModal('login')}
         modelStatus={modelStatus}
         theme={theme}
         onToggleTheme={toggleTheme}
+        searchQuery={searchQuery}
+        onSearchChange={(value) => { setSearchQuery(value); if (isAuthenticated && value) setActiveView('tasks'); }}
       />
 
       {/* Floating Active Reminder Alert Banner */}
@@ -271,10 +295,21 @@ function MainApp() {
         </div>
       )}
 
-      <main className="app-container" style={{ flex: 1 }}>
+      <div className={`workspace-shell ${isAuthenticated ? 'is-authenticated' : 'is-guest'} ${isAuthenticated && isDevChatbotOpen ? 'workspace-chat-open' : ''}`}>
+        {isAuthenticated && (
+          <WorkspaceSidebar
+            activeView={activeView}
+            onNavigate={navigateWorkspace}
+            onOpenPlanner={() => setIsAiDrawerOpen(true)}
+            onOpenAssistant={() => setIsDevChatbotOpen(true)}
+            modelStatus={modelStatus}
+            counts={counts}
+          />
+        )}
+      <main className="app-container workspace-main" style={{ flex: 1 }}>
         {/* Unauthenticated Welcome Banner */}
         {!isAuthenticated && (
-          <div style={{
+          <div className="guest-landing-hero" style={{
             backgroundColor: 'var(--bg-surface)',
             border: '1px solid var(--border-subtle)',
             borderRadius: 'var(--radius-xl)',
@@ -338,7 +373,8 @@ function MainApp() {
             tasks={tasks}
             modelStatus={modelStatus}
             onOpenDevChatbot={() => isAuthenticated ? setIsDevChatbotOpen(true) : openAuthModal('login')}
-            onOpenPlanner={() => isAuthenticated ? setIsAiDrawerOpen(true) : openAuthModal('login')}
+            onOpenPlanner={() => setIsAiDrawerOpen(true)}
+            onAddTask={focusNewTask}
           />
         )}
 
@@ -355,6 +391,15 @@ function MainApp() {
         {/* Dashboard Overview */}
         <StatsOverview tasks={tasks} />
 
+        <section id="workspace-tasks" className="workspace-tasks" aria-labelledby="workspace-tasks-heading">
+          <div className="workspace-task-heading">
+            <div>
+              <div className="workspace-section-kicker">YOUR WORKSPACE</div>
+              <h2 id="workspace-tasks-heading"><CheckCircle2 size={23} aria-hidden="true" /> My tasks <span>{tasks.length}</span></h2>
+              <p>Everything you need to move forward, one task at a time.</p>
+            </div>
+            <button type="button" className="btn-primary workspace-new-task" onClick={focusNewTask}><Plus size={17} aria-hidden="true" /> New task</button>
+          </div>
         {/* Quick Add Bar */}
         <QuickAddTask onAddTask={handleAddTask} />
 
@@ -436,7 +481,9 @@ function MainApp() {
         )}
           </>
         )}
+      </section>
       </main>
+      </div>
 
       {/* Modals */}
       <AuthModal />
@@ -457,16 +504,17 @@ function MainApp() {
         onClose={() => setIsPlanModalOpen(false)}
         onConfirmPlan={handleConfirmPlan}
       />
-      <AiDevChatbotDrawer
+      {isAuthenticated && <AiDevChatbotDrawer
+        docked
         key={user?.id || user?.username || 'guest'}
         isOpen={isDevChatbotOpen}
         onClose={() => setIsDevChatbotOpen(false)}
         onAddTask={handleAddTask}
-      />
+      />}
 
       {/* Keep the assistant discoverable without covering the visitor landing page. */}
-      {isAuthenticated && <button
-        onClick={() => isAuthenticated ? setIsDevChatbotOpen(true) : openAuthModal('login')}
+      {isAuthenticated && !isDevChatbotOpen && <button
+        onClick={() => setIsDevChatbotOpen(true)}
         className="btn-primary assistant-fab"
         aria-label="Open Qwen AI assistant"
         style={{

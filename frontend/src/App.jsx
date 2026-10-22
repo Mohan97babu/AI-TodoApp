@@ -437,7 +437,7 @@ function MainApp() {
             <p style={{ fontSize: '0.85rem' }}>Syncing tasks...</p>
           </div>
         ) : !taskError && visibleTasks.length === 0 ? (
-          <div style={{
+          <div className="workspace-empty-state" style={{
             padding: '4rem 1.5rem',
             textAlign: 'center',
             backgroundColor: 'var(--bg-surface)',
@@ -446,23 +446,21 @@ function MainApp() {
           }}>
             <Inbox size={42} color="var(--text-muted)" style={{ margin: '0 auto 0.75rem' }} />
             <h3 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '0.35rem' }}>
-              {isAuthenticated ? 'No tasks found for this view' : 'Sign in to access your secure tasks'}
+              {tasks.length === 0 ? 'Your next great day starts here' : 'No tasks match this view'}
             </h3>
             <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', maxWidth: '420px', margin: '0 auto 1.25rem' }}>
-              {isAuthenticated
-                ? 'Create a quick task above or use the AI Study Planner to generate an actionable day-by-day learning roadmap!'
-                : 'Your tasks and study plans are securely isolated to your account.'}
+              {tasks.length === 0
+                ? 'Add your first task, or let the AI Study Planner help you break a goal into simple steps.'
+                : 'Try a different filter, search term, or category to find what you need.'}
             </p>
             <div style={{ display: 'flex', justifyContent: 'center', gap: '0.75rem' }}>
-              {isAuthenticated ? (
-                <button onClick={() => isAuthenticated ? setIsAiDrawerOpen(true) : openAuthModal('login')} className="btn-primary">
-                  <Sparkles size={16} />
-                  <span>Generate AI Study Plan</span>
-                </button>
+              {tasks.length === 0 ? (
+                <>
+                  <button type="button" className="btn-primary" onClick={focusNewTask}><Plus size={16} aria-hidden="true" /> Create my first task</button>
+                  <button type="button" className="btn-secondary" onClick={() => setIsAiDrawerOpen(true)}><Sparkles size={16} aria-hidden="true" /> Generate a study plan</button>
+                </>
               ) : (
-                <button onClick={() => openAuthModal('login')} className="btn-primary">
-                  <span>Sign In</span>
-                </button>
+                <button type="button" className="btn-secondary" onClick={() => { setActiveStatus('ALL'); setActiveCategory('ALL'); setSearchQuery(''); }}>Clear filters</button>
               )}
             </div>
           </div>

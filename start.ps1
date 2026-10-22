@@ -19,7 +19,25 @@ if (Test-Path -LiteralPath $envPath) {
 if (-not $env:JWT_SECRET -or $env:JWT_SECRET.Length -lt 32 -or $env:JWT_SECRET.StartsWith('CHANGE_ME')) {
   throw 'Set a random JWT_SECRET of at least 32 characters in .env before starting. Copy .env.example to .env and replace the placeholders.'
 }
-if (-not (Get-Command java -ErrorAction SilentlyContinue)) { throw 'Java 17+ must be available on PATH.' }
+# Automatically locate Java if not already on PATH
+if (-not (Get-Command java -ErrorAction SilentlyContinue)) {
+  $candidateJdks = @(
+    $env:JAVA_HOME,
+    'C:\Program Files\Android\openjdk\jdk-21.0.8',
+    'C:\Program Files\Java\jdk-21',
+    'C:\Program Files\Java\jdk-17'
+  )
+  foreach ($candidate in $candidateJdks) {
+    if ($candidate -and (Test-Path (Join-Path $candidate 'bin\java.exe'))) {
+      $env:JAVA_HOME = $candidate
+      $env:PATH = "$candidate\bin;$env:PATH"
+      Write-Host "Configured Java from: $candidate" -ForegroundColor DarkGray
+      break
+    }
+  }
+}
+
+if (-not (Get-Command java -ErrorAction SilentlyContinue)) { throw 'Java 17+ must be available on PATH or in JAVA_HOME.' }
 if (-not (Get-Command npm -ErrorAction SilentlyContinue)) { throw 'Node.js and npm must be installed.' }
 
 # Docker backend uses host.docker.internal; native Windows backend uses localhost.
@@ -44,7 +62,8 @@ if (Test-Path $gatewayScript) {
 }
 
 Write-Host 'Starting Spring Boot API (H2 dev profile) at http://localhost:8082'
-$backendCmd = 'cd /d "' + $backendDir + '" && "' + $maven + '" spring-boot:run -Dspring-boot.run.profiles=h2'
+$profilePrefix = 'set "SPRING_PROFILES_ACTIVE=h2" && '
+$backendCmd = $javaEnvPrefix + $jwtSecretPrefix + $profilePrefix + 'cd /d "' + $backendDir + '" && "' + $maven + '" spring-boot:run "-Dspring-boot.run.profiles=h2"'
 Start-Process -FilePath 'cmd.exe' -ArgumentList @('/k', $backendCmd)
 
 if (-not (Test-Path (Join-Path $frontendDir 'node_modules'))) {

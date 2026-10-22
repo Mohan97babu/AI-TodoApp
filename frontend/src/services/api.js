@@ -28,7 +28,14 @@ export async function apiRequest(endpoint, options = {}) {
   const data = await response.json().catch(() => null);
 
   if (!response.ok) {
-    const errorMsg = data?.message || data?.error || `Request failed with status ${response.status}`;
+    let errorMsg = data?.message || data?.error;
+    if (!errorMsg) {
+      if (response.status === 500 || response.status === 502 || response.status === 503) {
+        errorMsg = 'Backend server is not reachable on port 8082. Please ensure the Spring Boot backend is running.';
+      } else {
+        errorMsg = `Request failed with status ${response.status}`;
+      }
+    }
     throw new Error(errorMsg);
   }
 

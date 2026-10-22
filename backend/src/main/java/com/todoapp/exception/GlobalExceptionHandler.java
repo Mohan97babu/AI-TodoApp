@@ -42,6 +42,11 @@ public class GlobalExceptionHandler {
         return buildErrorResponse(HttpStatus.BAD_REQUEST, "Validation failed", errors);
     }
 
+    @ExceptionHandler(org.springframework.http.converter.HttpMessageConversionException.class)
+    public ResponseEntity<Map<String, Object>> handleMessageNotReadable(org.springframework.http.converter.HttpMessageConversionException ex) {
+        return buildErrorResponse(HttpStatus.BAD_REQUEST, "Malformed JSON request body: " + ex.getMessage(), null);
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, Object>> handleGeneralException(Exception ex) {
         log.error("Unhandled API error", ex);

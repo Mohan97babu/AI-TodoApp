@@ -505,7 +505,7 @@ export function AiDevChatbotDrawer({ isOpen, onClose, onAddTask }) {
                     gap: '5px',
                   }}>
                     <BookOpen size={13} />
-                    Suggested reading (not live-verified):
+                    Suggested learning links · not live-verified:
                   </div>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
                     {msg.sources.map((src, sIdx) => {
@@ -648,7 +648,7 @@ export function AiDevChatbotDrawer({ isOpen, onClose, onAddTask }) {
             }}>
               <Sparkles size={16} className="spin-slow" style={{ color: '#EB1000' }} />
               <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                Qwen 3 is synthesizing answer...
+                Generating your answer...
               </span>
             </div>
           )}
@@ -843,6 +843,28 @@ function RenderMarkdownContent({ content, onCopyCode, copiedCodeId }) {
         return (
           <div key={index}>
             {lines.map((line, lIdx) => {
+              // Render markdown pipe tables as responsive HTML instead of broken text.
+              // Consecutive table lines are rendered once, as one accessible table.
+              const isPipeRow = /^\\s*\\|.*\\|\\s*$/.test(line);
+              const prevIsPipe = lIdx > 0 && /^\\s*\\|.*\\|\\s*$/.test(lines[lIdx - 1]);
+              if (isPipeRow && prevIsPipe) return null;
+              if (isPipeRow) {
+                const tableLines = [];
+                for (let row = lIdx; row < lines.length && /^\\s*\\|.*\\|\\s*$/.test(lines[row]); row++) {
+                  tableLines.push(lines[row].trim().slice(1, -1).split('|').map(cell => cell.trim()));
+                }
+                const separator = tableLines[1]?.every(cell => /^:?-{3,}:?$/.test(cell));
+                const header = tableLines[0];
+                const bodyRows = tableLines.slice(separator ? 2 : 1);
+                return (
+                  <div key={lIdx} className="assistant-table-scroll" tabIndex={0} role="region" aria-label="Scroll table horizontally if needed">
+                    <table className="assistant-markdown-table">
+                      <thead><tr>{header.map((cell, idx) => <th key={idx} scope="col">{renderInlineStyles(cell)}</th>)}</tr></thead>
+                      <tbody>{bodyRows.map((cells, row) => <tr key={row}>{header.map((_, idx) => <td key={idx}>{renderInlineStyles(cells[idx] || '')}</td>)}</tr>)}</tbody>
+                    </table>
+                  </div>
+                );
+              }
               // Heading 3
               if (line.startsWith('### ')) {
                 return (

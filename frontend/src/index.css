@@ -404,10 +404,28 @@ input:focus-visible, select:focus-visible, textarea:focus-visible {
 .chat-message-feed { overflow-wrap: anywhere; }
 .chat-message-feed pre { max-width: 100%; overflow-x: auto; white-space: pre; }
 .chat-message-feed p, .chat-message-feed li { line-height: 1.7; }
-.chat-dialog { width: min(820px, 100vw) !important; max-width: 100vw; }
+.chat-panel { max-width: min(820px, 100vw) !important; }
 @media (max-width: 900px) { .guest-feature-grid { grid-template-columns: 1fr; } }
 @media (max-width: 600px) {
  .app-container { padding-top: 1rem; }
  .guest-feature-card { padding: 1.1rem; }
  .dashboard-welcome { padding: 1.2rem; }
 }
+
+/* Assistant's generated tables are readable on laptops and phones. */
+.assistant-table-scroll {
+  overflow-x: auto; width: 100%; max-width: 100%;
+  margin: .75rem 0; border: 1px solid var(--border-subtle);
+  border-radius: 10px; scrollbar-width: thin;
+}
+.assistant-markdown-table { width: 100%; min-width: 440px; border-collapse: collapse; font-size: .82rem; }
+.assistant-markdown-table th, .assistant-markdown-table td {
+  padding: .7rem .8rem; text-align: left;
+  border-bottom: 1px solid var(--border-subtle);
+  border-right: 1px solid var(--border-subtle);
+  vertical-align: top; line-height: 1.5;
+}
+.assistant-markdown-table th { background: var(--bg-elevated); color: var(--text-primary); font-weight: 700; }
+.assistant-markdown-table tr:last-child td { border-bottom: none; }
+.assistant-table-scroll:focus-visible { outline: 2px solid var(--adobe-red); outline-offset: 2px; }
+@media (max-width: 680px) { .chat-panel { width: 100vw !important; } }

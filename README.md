@@ -47,6 +47,18 @@ It runs with a Spring Boot REST API, a PostgreSQL database and a **self-hosted Q
 | 🔔 **Reminders** | Browser notification and sound features, subject to browser permissions and app availability |
 | 🐳 **One-command setup** | Docker Compose launches the app, database and model server together |
 
+### 🎨 Planify Minimal interface
+
+The default experience is a calm **light workspace**, with an optional matching dark theme. The four-item navigation opens **Dashboard**, **My Tasks**, **Study Planner**, or **AI Assistant**; it does not advertise unfinished features.
+
+- **Task-first dashboard:** a simple greeting and three real-data metrics (Due today, In progress, Completed), followed by the task list.
+- **One primary task action:** choose **New task** or press **N** outside input fields to reveal the task form; it is collapsed at other times.
+- **Less visual clutter:** one search field in the top bar, status tabs, a category dropdown, and a separate sort dropdown.
+- **AI only when needed:** the assistant opens as a closable drawer, with optional tutorial-link toggles under **Suggested learning links**.
+- **Responsive and accessible:** keyboard-focus styling, readable mobile layouts, scrollable code/tables, and modal focus handling.
+
+Previously selected light/dark preference is respected from browser storage. **The UI shows your actual tasks and counts**; example numbers in visual design references are not real app data.
+
 **About learning references:** the application ships with a small **curated local programming knowledge catalog** and suggested tutorial links. The source toggles filter those suggested links; they **do not** scrape or retrieve current content from those sites.
 
 <a id="architecture"></a>

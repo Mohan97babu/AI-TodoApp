@@ -7,7 +7,7 @@ import {
 import { aiService } from '../services/aiService';
 import { useAuth } from '../context/AuthContext';
 
-export function AiDevChatbotDrawer({ isOpen, onClose, onAddTask }) {
+export function AiDevChatbotDrawer({ isOpen, onClose, onAddTask, docked = false }) {
   const { user } = useAuth();
   const storageKey = 'planify_dev_chat_history_' + (user?.id || user?.username || 'guest');
   const [messages, setMessages] = useState(() => {
@@ -200,7 +200,7 @@ export function AiDevChatbotDrawer({ isOpen, onClose, onAddTask }) {
   if (!isOpen) return null;
 
   return (
-    <div className="chat-dialog" role="presentation" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }} style={{
+    <div className={`chat-dialog ${docked ? "chat-docked" : ""}`} role="presentation" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }} style={{
       position: 'fixed',
       inset: 0,
       backgroundColor: 'rgba(0, 0, 0, 0.75)',
@@ -210,7 +210,7 @@ export function AiDevChatbotDrawer({ isOpen, onClose, onAddTask }) {
       zIndex: 95,
       animation: 'fadeIn 0.2s ease',
     }}>
-      <div className="chat-panel" role="dialog" aria-modal="true" aria-label="Dev and Study AI Assistant" style={{
+      <div className="chat-panel" role="dialog" aria-modal={!docked} aria-label="Dev and Study AI Assistant" style={{
         width: '100%',
         maxWidth: '680px',
         height: '100%',
@@ -247,7 +247,7 @@ export function AiDevChatbotDrawer({ isOpen, onClose, onAddTask }) {
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <h3 style={{ fontSize: '1.05rem', fontWeight: 700, margin: 0 }}>
-                  Dev & Study AI Assistant
+                  AI Study Companion
                 </h3>
                 <span style={{
                   fontSize: '0.65rem',
@@ -321,14 +321,14 @@ export function AiDevChatbotDrawer({ isOpen, onClose, onAddTask }) {
         }}>
           <span style={{ color: 'var(--text-secondary)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
             <Globe size={13} />
-            Reference sites:
+            Suggested learning links:
           </span>
 
           {/* GeeksforGeeks Toggle */}
           <button
             onClick={() => toggleSource('geeksforgeeks')}
             aria-pressed={sourcesEnabled.geeksforgeeks}
-            aria-label={`Use geeksforgeeks as a knowledge source`}
+            aria-label="Include suggested GeeksforGeeks links"
             style={{
               display: 'flex',
               alignItems: 'center',
@@ -352,7 +352,7 @@ export function AiDevChatbotDrawer({ isOpen, onClose, onAddTask }) {
           <button
             onClick={() => toggleSource('w3schools')}
             aria-pressed={sourcesEnabled.w3schools}
-            aria-label={`Use w3schools as a knowledge source`}
+            aria-label="Include suggested W3Schools links"
             style={{
               display: 'flex',
               alignItems: 'center',
@@ -376,7 +376,7 @@ export function AiDevChatbotDrawer({ isOpen, onClose, onAddTask }) {
           <button
             onClick={() => toggleSource('tpointtech')}
             aria-pressed={sourcesEnabled.tpointtech}
-            aria-label={`Use tpointtech as a knowledge source`}
+            aria-label="Include suggested TPointTech links"
             style={{
               display: 'flex',
               alignItems: 'center',
@@ -401,6 +401,7 @@ export function AiDevChatbotDrawer({ isOpen, onClose, onAddTask }) {
         <div role="log" aria-live="polite" aria-relevant="additions text" className="chat-message-feed" style={{
           flex: 1,
           overflowY: 'auto',
+          minHeight: 0,
           padding: '1.25rem',
           display: 'flex',
           flexDirection: 'column',
@@ -418,7 +419,7 @@ export function AiDevChatbotDrawer({ isOpen, onClose, onAddTask }) {
             >
               {/* Message Bubble */}
               <div style={{
-                maxWidth: '90%',
+                maxWidth: '100%',
                 padding: '0.9rem 1.15rem',
                 borderRadius: msg.role === 'user' ? '16px 16px 2px 16px' : '16px 16px 16px 2px',
                 backgroundColor: msg.role === 'user' ? 'var(--primary-color)' : 'var(--bg-elevated)',

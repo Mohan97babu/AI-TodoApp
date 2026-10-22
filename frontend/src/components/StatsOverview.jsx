@@ -20,7 +20,7 @@ export function StatsOverview({ tasks = [] }) {
           <div>{percentage}%</div>
         </div>
         <div className="workspace-stat-content">
-          <span className="workspace-stat-title">Daily progress</span>
+          <span className="workspace-stat-title">Overall progress</span>
           <strong>{completed} of {total}</strong>
           <small>{total ? 'tasks completed' : 'Add tasks to get started'}</small>
         </div>

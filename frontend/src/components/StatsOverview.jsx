@@ -1,5 +1,5 @@
 import React from 'react';
-import { CalendarDays, CheckCircle2, Clock3, TrendingUp } from 'lucide-react';
+import { Calendar, CheckCircle2, Clock, TrendingUp } from 'lucide-react';
 
 /** All numbers are derived from the signed-in user's actual tasks. */
 export function StatsOverview({ tasks = [] }) {
@@ -26,11 +26,11 @@ export function StatsOverview({ tasks = [] }) {
         </div>
       </div>
       <div className="workspace-stat">
-        <div className="workspace-stat-icon is-red"><CalendarDays size={21} aria-hidden="true" /></div>
+        <div className="workspace-stat-icon is-red"><Calendar size={21} aria-hidden="true" /></div>
         <div className="workspace-stat-content"><span className="workspace-stat-title">Due today</span><strong>{dueToday}</strong><small>{dueToday ? 'tasks need your attention' : 'Nothing due right now'}</small></div>
       </div>
       <div className="workspace-stat">
-        <div className="workspace-stat-icon is-blue"><Clock3 size={21} aria-hidden="true" /></div>
+        <div className="workspace-stat-icon is-blue"><Clock size={21} aria-hidden="true" /></div>
         <div className="workspace-stat-content"><span className="workspace-stat-title">In progress</span><strong>{inProgress}</strong><small>{pending ? `${pending} tasks still open` : 'You are all caught up'}</small></div>
       </div>
       <div className="workspace-stat">

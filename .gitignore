@@ -28,3 +28,8 @@ __pycache__/
 !.env.example
 *.pem
 *.key
+
+# Installers & Binaries
+*.msi
+*.exe
+

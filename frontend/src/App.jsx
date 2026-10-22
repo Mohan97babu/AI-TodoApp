@@ -296,13 +296,13 @@ function MainApp() {
             }} />
             <div style={{ maxWidth: '640px' }}>
               <span className="tag-badge prio-urgent" style={{ marginBottom: '0.65rem' }}>
-                CREATIVE SUITE EDITION
+                YOUR PERSONAL PRODUCTIVITY SPACE
               </span>
               <h1 style={{ fontSize: '1.75rem', fontWeight: 800, letterSpacing: '-0.02em', marginBottom: '0.4rem' }}>
-                High-Velocity Daily Planning & AI Study Roadmaps
+                A calmer way to plan your day and learn faster
               </h1>
               <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '1.25rem', lineHeight: 1.5 }}>
-                Master tasks with configurable recurring reminders, user data isolation, and instant AI curriculum breakdowns.
+                Organize tasks, stay focused, and build a study plan with your private Qwen AI assistant. Everything important, in one simple workspace.
               </p>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
                 <button
@@ -310,7 +310,7 @@ function MainApp() {
                   className="btn-primary"
                   style={{ padding: '0.65rem 1.25rem' }}
                 >
-                  <span>Get Started (Sign Up)</span>
+                  <span>Create free account</span>
                 </button>
                 <button
                   onClick={() => openAuthModal('login')}
@@ -325,7 +325,7 @@ function MainApp() {
                   style={{ color: 'var(--adobe-red)', fontWeight: 600 }}
                 >
                   <Sparkles size={16} />
-                  <span>Sign in for AI study plans</span>
+                  <span>Explore AI planning after sign in</span>
                 </button>
               </div>
             </div>
@@ -342,6 +342,16 @@ function MainApp() {
           />
         )}
 
+        {/* A visitor sees a useful landing state rather than a fake zero-task dashboard. */}
+        {!isAuthenticated && (
+          <div className="guest-feature-grid" aria-label="What you can do with Planify">
+            <div className="guest-feature-card"><CheckCircle2 size={24} aria-hidden="true" /><h2>Stay organized</h2><p>Keep daily tasks, priorities, and deadlines together.</p></div>
+            <div className="guest-feature-card"><Sparkles size={24} aria-hidden="true" /><h2>Learn with a plan</h2><p>Turn study goals into manageable daily actions.</p></div>
+            <div className="guest-feature-card"><Bot size={24} aria-hidden="true" /><h2>Get AI guidance</h2><p>Ask Qwen coding questions and save useful exercises.</p></div>
+          </div>
+        )}
+        {isAuthenticated && (
+          <>
         {/* Dashboard Overview */}
         <StatsOverview tasks={tasks} />
 
@@ -424,6 +434,8 @@ function MainApp() {
             ))}
           </div>
         )}
+          </>
+        )}
       </main>
 
       {/* Modals */}
@@ -452,8 +464,8 @@ function MainApp() {
         onAddTask={handleAddTask}
       />
 
-      {/* Floating AI Dev Assistant Trigger */}
-      <button
+      {/* Keep the assistant discoverable without covering the visitor landing page. */}
+      {isAuthenticated && <button
         onClick={() => isAuthenticated ? setIsDevChatbotOpen(true) : openAuthModal('login')}
         className="btn-primary assistant-fab"
         aria-label="Open Qwen AI assistant"
@@ -476,7 +488,7 @@ function MainApp() {
         title="Open Dev & Study AI Assistant (Qwen 3)"
       >
         <Bot size={18} />
-        <span>Ask Qwen 3 AI</span>
+        <span>Ask Qwen AI</span>
         <span style={{
           width: '7px',
           height: '7px',
@@ -484,7 +496,7 @@ function MainApp() {
           backgroundColor: modelStatus?.connected ? '#22C55E' : '#F59E0B',
           boxShadow: modelStatus?.connected ? '0 0 6px #22C55E' : 'none',
         }} />
-      </button>
+      </button>}
     </div>
   );
 }

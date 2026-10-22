@@ -384,3 +384,30 @@ input:focus-visible, select:focus-visible, textarea:focus-visible {
   .nav-dev-button { display: none !important; }
   .welcome-actions .btn-secondary { display: none; }
 }
+
+
+/* Planify workspace: consistent dashboard rhythm and focused guest onboarding */
+.app-container { max-width: 1360px; padding-top: 2rem; }
+.guest-feature-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; margin-top: 1.25rem; }
+.guest-feature-card {
+  min-width: 0; padding: 1.5rem;
+  border: 1px solid var(--border-subtle); background: var(--bg-surface);
+  border-radius: var(--radius-lg); box-shadow: var(--shadow-sm);
+}
+.guest-feature-card svg { color: var(--adobe-red); margin-bottom: .75rem; }
+.guest-feature-card h2 { font-size: 1.05rem; font-weight: 750; margin-bottom: .35rem; letter-spacing: -.025em; }
+.guest-feature-card p { font-size: .88rem; line-height: 1.65; color: var(--text-secondary); }
+.dashboard-welcome { min-height: 152px; padding: 1.8rem 2rem; }
+.dashboard-welcome h1 { font-size: clamp(1.65rem, 2.75vw, 2.3rem); }
+.btn-primary, .btn-secondary { min-height: 42px; }
+.app-container button:focus-visible { outline-offset: 3px; }
+.chat-message-feed { overflow-wrap: anywhere; }
+.chat-message-feed pre { max-width: 100%; overflow-x: auto; white-space: pre; }
+.chat-message-feed p, .chat-message-feed li { line-height: 1.7; }
+.chat-dialog { width: min(820px, 100vw) !important; max-width: 100vw; }
+@media (max-width: 900px) { .guest-feature-grid { grid-template-columns: 1fr; } }
+@media (max-width: 600px) {
+ .app-container { padding-top: 1rem; }
+ .guest-feature-card { padding: 1.1rem; }
+ .dashboard-welcome { padding: 1.2rem; }
+}

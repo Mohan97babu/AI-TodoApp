@@ -52,7 +52,7 @@ export function Navbar({ onOpenAiPlanner, onOpenDevChatbot, modelStatus, theme, 
               
             </div>
             <p className="nav-brand-description" style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '-2px' }}>
-              Your tasks. Your momentum.
+              Plan your day with clarity
             </p>
           </div>
         </div>
@@ -74,48 +74,6 @@ export function Navbar({ onOpenAiPlanner, onOpenDevChatbot, modelStatus, theme, 
         )}
         {/* Center / Actions */}
         <div className="app-nav-actions" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          {/* AI Dev Assistant Button */}
-          <button
-            onClick={onOpenDevChatbot}
-            className="btn-secondary nav-dev-button"
-            style={{
-              padding: '0.5rem 0.95rem',
-              fontSize: '0.85rem',
-              borderRadius: 'var(--radius-full)',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              border: '1px solid var(--border-subtle)',
-              position: 'relative',
-            }}
-            title="Open private Qwen assistant"
-          >
-            <Bot size={16} style={{ color: '#EB1000' }} />
-            <span className="nav-action-label" style={{ fontWeight: 600 }}>AI Dev Assistant</span>
-            <span style={{
-              width: '6px',
-              height: '6px',
-              borderRadius: '50%',
-              backgroundColor: modelStatus?.connected ? '#22C55E' : '#F59E0B',
-              boxShadow: modelStatus?.connected ? '0 0 6px #22C55E' : 'none',
-              display: 'inline-block',
-            }} />
-          </button>
-
-          {/* AI Study Plan Button */}
-          <button
-            onClick={onOpenAiPlanner}
-            className="btn-primary"
-            style={{
-              padding: '0.55rem 1rem',
-              fontSize: '0.875rem',
-              borderRadius: 'var(--radius-full)',
-            }}
-          >
-            <Sparkles size={16} />
-            <span className="nav-action-label">AI Study Planner</span>
-          </button>
-
           {/* Theme Toggle */}
           <button
             onClick={onToggleTheme}

@@ -25,7 +25,7 @@ function MainApp() {
   const { activeAlert, dismissAlert, refreshReminders } = useNotifications();
 
   // App Theme state
-  const [theme, setTheme] = useState(() => localStorage.getItem('planify_theme') || 'dark');
+  const [theme, setTheme] = useState(() => localStorage.getItem('planify_theme') || 'light');
 
   // Task & Filter state
   const [tasks, setTasks] = useState([]);
@@ -39,7 +39,8 @@ function MainApp() {
 
   // Modals state
   const [isAiDrawerOpen, setIsAiDrawerOpen] = useState(false);
-  const [isDevChatbotOpen, setIsDevChatbotOpen] = useState(() => typeof window !== 'undefined' && window.innerWidth >= 1380);
+  const [isDevChatbotOpen, setIsDevChatbotOpen] = useState(false);
+  const [showQuickAdd, setShowQuickAdd] = useState(false);
   const [activeView, setActiveView] = useState('overview');
   const [modelStatus, setModelStatus] = useState(null);
   const [reviewedPlan, setReviewedPlan] = useState(null);
@@ -58,7 +59,8 @@ function MainApp() {
       if (event.key.toLowerCase() !== 'n' || event.ctrlKey || event.altKey || event.metaKey || event.repeat ||
           target?.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target?.tagName)) return;
       if (isAuthenticated && !isAiDrawerOpen && !isDevChatbotOpen && !isPlanModalOpen && !editingTask) {
-        document.getElementById('quick-add-title')?.focus();
+        setShowQuickAdd(true);
+        window.requestAnimationFrame(() => document.getElementById('quick-add-title')?.focus());
         event.preventDefault();
       }
     };
@@ -135,6 +137,7 @@ function MainApp() {
       const created = await taskService.createTask(taskData);
       setTasks((prev) => [created, ...prev]);
       showToast('Task created successfully');
+      setShowQuickAdd(false);
       refreshReminders();
     } catch (err) {
       showToast(err.message || 'Could not create task');
@@ -230,8 +233,11 @@ function MainApp() {
   };
   const focusNewTask = () => {
     setActiveView('tasks');
-    document.getElementById('quick-add-title')?.focus();
-    document.getElementById('workspace-tasks')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    setShowQuickAdd(true);
+    window.requestAnimationFrame(() => {
+      document.getElementById('quick-add-title')?.focus();
+      document.getElementById('workspace-tasks')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
   };
 
   return (
@@ -295,7 +301,7 @@ function MainApp() {
         </div>
       )}
 
-      <div className={`workspace-shell ${isAuthenticated ? 'is-authenticated' : 'is-guest'} ${isAuthenticated && isDevChatbotOpen ? 'workspace-chat-open' : ''}`}>
+      <div className={`workspace-shell ${isAuthenticated ? 'is-authenticated' : 'is-guest'}`}>
         {isAuthenticated && (
           <WorkspaceSidebar
             activeView={activeView}
@@ -372,8 +378,6 @@ function MainApp() {
             user={user}
             tasks={tasks}
             modelStatus={modelStatus}
-            onOpenDevChatbot={() => isAuthenticated ? setIsDevChatbotOpen(true) : openAuthModal('login')}
-            onOpenPlanner={() => setIsAiDrawerOpen(true)}
             onAddTask={focusNewTask}
           />
         )}
@@ -394,14 +398,21 @@ function MainApp() {
         <section id="workspace-tasks" className="workspace-tasks" aria-labelledby="workspace-tasks-heading">
           <div className="workspace-task-heading">
             <div>
-              <div className="workspace-section-kicker">YOUR WORKSPACE</div>
-              <h2 id="workspace-tasks-heading"><CheckCircle2 size={23} aria-hidden="true" /> My tasks <span>{tasks.length}</span></h2>
-              <p>Everything you need to move forward, one task at a time.</p>
+              <h2 id="workspace-tasks-heading">My tasks</h2>
+              <p>Stay focused on what matters next.</p>
             </div>
-            <button type="button" className="btn-primary workspace-new-task" onClick={focusNewTask}><Plus size={17} aria-hidden="true" /> New task</button>
+            <span className="minimal-task-count">{tasks.length} total</span>
           </div>
-        {/* Quick Add Bar */}
-        <QuickAddTask onAddTask={handleAddTask} />
+        {/* Quick add stays collapsed until New task or the N shortcut is used. */}
+        {showQuickAdd && (
+          <div className="minimal-quick-add-panel">
+            <div className="minimal-quick-add-heading">
+              <strong>Create a task</strong>
+              <button type="button" className="btn-ghost" onClick={() => setShowQuickAdd(false)} aria-label="Close new task form"><X size={18} /></button>
+            </div>
+            <QuickAddTask onAddTask={handleAddTask} />
+          </div>
+        )}
 
         {/* Filters and Search */}
         <TaskFilters
@@ -503,46 +514,12 @@ function MainApp() {
         onConfirmPlan={handleConfirmPlan}
       />
       {isAuthenticated && <AiDevChatbotDrawer
-        docked
         key={user?.id || user?.username || 'guest'}
         isOpen={isDevChatbotOpen}
         onClose={() => setIsDevChatbotOpen(false)}
         onAddTask={handleAddTask}
       />}
 
-      {/* Keep the assistant discoverable without covering the visitor landing page. */}
-      {isAuthenticated && !isDevChatbotOpen && <button
-        onClick={() => setIsDevChatbotOpen(true)}
-        className="btn-primary assistant-fab"
-        aria-label="Open Qwen AI assistant"
-        style={{
-          position: 'fixed',
-          bottom: '24px',
-          right: '24px',
-          zIndex: 35,
-          padding: '0.75rem 1.15rem',
-          borderRadius: '100px',
-          boxShadow: '0 8px 24px rgba(235, 16, 0, 0.45)',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px',
-          fontWeight: 700,
-          fontSize: '0.875rem',
-          border: '1px solid rgba(255, 255, 255, 0.2)',
-          cursor: 'pointer',
-        }}
-        title="Open Dev & Study AI Assistant (Qwen 3)"
-      >
-        <Bot size={18} />
-        <span>Ask Qwen AI</span>
-        <span style={{
-          width: '7px',
-          height: '7px',
-          borderRadius: '50%',
-          backgroundColor: modelStatus?.connected ? '#22C55E' : '#F59E0B',
-          boxShadow: modelStatus?.connected ? '0 0 6px #22C55E' : 'none',
-        }} />
-      </button>}
     </div>
   );
 }

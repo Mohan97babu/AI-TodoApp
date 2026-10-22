@@ -620,3 +620,19 @@ input:focus-visible, select:focus-visible, textarea:focus-visible {
  .app-navbar {min-height:74px;}
  .workspace-sidebar {position:relative;top:auto;}
 }
+
+
+/* Readable task rows and a useful real-data zero state. */
+.workspace-task-row {box-shadow:none!important;border-radius:12px!important;transition:border-color .15s,background-color .15s!important;}
+.workspace-task-row:hover {border-color:var(--border-active)!important;background:var(--bg-elevated)!important;}
+.workspace-task-row > button:first-child {width:25px!important;height:25px!important;min-width:25px;}
+.workspace-task-row button:focus-visible {outline:2px solid var(--adobe-red);outline-offset:3px;}
+.workspace-task-row h4 {line-height:1.5;}
+.workspace-empty-state {
+  background:radial-gradient(circle at 50% 0%,rgba(236,52,66,.08),transparent 55%),var(--bg-canvas)!important;
+  border:1px dashed var(--border-active)!important;
+  padding:3rem 1rem!important;
+}
+.workspace-empty-state > svg {color:var(--adobe-red)!important;}
+.workspace-empty-state h3 {font-size:1.1rem!important;}
+.workspace-empty-state .btn-primary,.workspace-empty-state .btn-secondary {min-height:42px;}

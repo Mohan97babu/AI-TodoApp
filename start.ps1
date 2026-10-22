@@ -1,38 +1,60 @@
-# Planify PowerShell One-Click Launcher
-$Host.UI.RawUI.WindowTitle = "Planify - AI Todo & Study Architect Launcher"
+# Planify local Windows launcher (uses H2, no local Postgres required)
+$ErrorActionPreference = 'Stop'
+Set-Location -LiteralPath $PSScriptRoot
 
-Write-Host "===============================================================================" -ForegroundColor Cyan
-Write-Host "  🚀 Starting Planify | AI Todo Planner & Dev Assistant" -ForegroundColor Yellow
-Write-Host "  Model: Qwen 3 (1.7B) Grounded in GeeksforGeeks, W3Schools, TPointTech" -ForegroundColor White
-Write-Host "===============================================================================" -ForegroundColor Cyan
-Write-Host ""
+# Read local .env; preserve explicitly supplied environment overrides.
+$envPath = Join-Path $PSScriptRoot '.env'
+if (Test-Path -LiteralPath $envPath) {
+  foreach ($line in Get-Content -LiteralPath $envPath) {
+    if ($line -match '^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)$') {
+      $key = $Matches[1]
+      $value = $Matches[2].Trim().Trim('"').Trim("'")
+      if (-not [Environment]::GetEnvironmentVariable($key, 'Process')) {
+        [Environment]::SetEnvironmentVariable($key, $value, 'Process')
+      }
+    }
+  }
+}
 
-# 1. Start Local Model Server on Port 8000
-Write-Host "[1/3] Starting Local Model Server on http://localhost:8000 (Serving Qwen 3)..." -ForegroundColor Green
-Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd 'E:\model'; python run_server.py --host 0.0.0.0 --port 8000 --no-browser"
+if (-not $env:JWT_SECRET -or $env:JWT_SECRET.Length -lt 32 -or $env:JWT_SECRET.StartsWith('CHANGE_ME')) {
+  throw 'Set a random JWT_SECRET of at least 32 characters in .env before starting. Copy .env.example to .env and replace the placeholders.'
+}
+if (-not (Get-Command java -ErrorAction SilentlyContinue)) { throw 'Java 17+ must be available on PATH.' }
+if (-not (Get-Command npm -ErrorAction SilentlyContinue)) { throw 'Node.js and npm must be installed.' }
 
-Start-Sleep -Seconds 3
+# Docker backend uses host.docker.internal; native Windows backend uses localhost.
+if ($env:OPENAI_API_URL -and $env:OPENAI_API_URL.Contains('host.docker.internal')) {
+  $env:OPENAI_API_URL = $env:OPENAI_API_URL.Replace('host.docker.internal', 'localhost')
+}
 
-# 2. Start Spring Boot Backend on Port 8082
-Write-Host "[2/3] Starting Spring Boot Backend on http://localhost:8082..." -ForegroundColor Green
-$backendDir = Join-Path $PSScriptRoot "backend"
-$mvnCmd = Join-Path $PSScriptRoot "tools\apache-maven-3.9.6\bin\mvn.cmd"
-Start-Process powershell -ArgumentList "-NoExit", "-Command", "$env:JAVA_HOME = 'C:\Program Files\Android\openjdk\jdk-21.0.8'; cd '$backendDir'; & '$mvnCmd' spring-boot:run -Dspring-boot.run.profiles=h2"
+$backendDir = Join-Path $PSScriptRoot 'backend'
+$frontendDir = Join-Path $PSScriptRoot 'frontend'
+$modelDir = if ($env:MODEL_HOME) { $env:MODEL_HOME } else { 'E:\model' }
+$gatewayScript = Join-Path $modelDir 'run_server.py'
+$mavenBundle = Join-Path $PSScriptRoot 'tools\apache-maven-3.9.6\bin\mvn.cmd'
+$maven = if (Test-Path $mavenBundle) { $mavenBundle } elseif (Get-Command mvn.cmd -ErrorAction SilentlyContinue) { 'mvn.cmd' } elseif (Get-Command mvn -ErrorAction SilentlyContinue) { 'mvn' } else { throw 'Maven 3.8+ is required on PATH or in tools\apache-maven-3.9.6\bin.' }
 
-Start-Sleep -Seconds 3
+Write-Host 'Planify | starting local services' -ForegroundColor Cyan
+if (Test-Path $gatewayScript) {
+  Write-Host 'Starting local Qwen model gateway on 127.0.0.1:8000'
+  $modelCmd = 'cd /d "' + $modelDir + '" && python run_server.py --host 127.0.0.1 --port 8000 --no-browser'
+  Start-Process -FilePath 'cmd.exe' -ArgumentList @('/k', $modelCmd)
+} else {
+  Write-Warning "Model server not found at $gatewayScript. AI responses may use a fallback."
+}
 
-# 3. Start React Frontend on Port 5174
-Write-Host "[3/3] Starting React Frontend on http://localhost:5174..." -ForegroundColor Green
-$frontendDir = Join-Path $PSScriptRoot "frontend"
-Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd '$frontendDir'; npm run dev"
+Write-Host 'Starting Spring Boot API (H2 dev profile) at http://localhost:8082'
+$backendCmd = 'cd /d "' + $backendDir + '" && "' + $maven + '" spring-boot:run -Dspring-boot.run.profiles=h2'
+Start-Process -FilePath 'cmd.exe' -ArgumentList @('/k', $backendCmd)
 
-Start-Sleep -Seconds 2
-Start-Process "http://localhost:5174/"
-
-Write-Host ""
-Write-Host "===============================================================================" -ForegroundColor Cyan
-Write-Host "  ✅ All Planify services launched successfully!" -ForegroundColor Green
-Write-Host "  - Frontend:      http://localhost:5174/" -ForegroundColor White
-Write-Host "  - Backend REST:  http://localhost:8082/api" -ForegroundColor White
-Write-Host "  - Local Model:   http://localhost:8000/v1 (Qwen 3 1.7B)" -ForegroundColor White
-Write-Host "===============================================================================" -ForegroundColor Cyan
+if (-not (Test-Path (Join-Path $frontendDir 'node_modules'))) {
+  Write-Host 'Installing frontend packages...'
+  Push-Location $frontendDir
+  try { npm ci; if ($LASTEXITCODE -ne 0) { throw 'npm ci failed' } }
+  finally { Pop-Location }
+}
+Write-Host 'Starting React dev server at http://localhost:5174'
+$frontendCmd = 'cd /d "' + $frontendDir + '" && npm run dev'
+Start-Process -FilePath 'cmd.exe' -ArgumentList @('/k', $frontendCmd)
+Write-Host 'Service windows started. Check their logs if the UI cannot connect.' -ForegroundColor Green
+Write-Host 'Open http://localhost:5174 and verify your sign-in and AI connection.'

@@ -1,32 +1,43 @@
-# Planify Docker Compose Launcher
-$Host.UI.RawUI.WindowTitle = "Planify - Docker Compose Launcher"
+# Run from any PowerShell directory: .\start-docker.ps1
+# Requires Docker Desktop; no Python, model files, Node, Java or local Ollama.
+$ErrorActionPreference = 'Stop'
+Set-Location -LiteralPath $PSScriptRoot
+$envFile = Join-Path $PSScriptRoot '.env'
+$template = Join-Path $PSScriptRoot '.env.example'
 
-Write-Host "===============================================================================" -ForegroundColor Cyan
-Write-Host "  🐳 Starting Planify via Docker Compose (Postgres + Backend + Frontend)" -ForegroundColor Yellow
-Write-Host "===============================================================================" -ForegroundColor Cyan
-Write-Host ""
-
-# Verify docker is available
-if (-not (Get-Command docker -ErrorAction SilentlyContinue)) {
-    Write-Host "❌ Error: Docker is not installed or not in PATH." -ForegroundColor Red
-    Write-Host "Please install Docker Desktop and start it before running this script." -ForegroundColor Yellow
-    exit 1
+function Get-RandomSecret {
+    $bytes = New-Object byte[] 48
+    $rng = [System.Security.Cryptography.RandomNumberGenerator]::Create()
+    try { $rng.GetBytes($bytes) } finally { $rng.Dispose() }
+    return [Convert]::ToBase64String($bytes)
 }
 
-# Run docker compose
-Write-Host "Building and launching containers in detached mode..." -ForegroundColor Green
-docker compose up --build -d
-
-if ($LASTEXITCODE -eq 0) {
-    Write-Host ""
-    Write-Host "===============================================================================" -ForegroundColor Cyan
-    Write-Host "  ✅ Planify containers launched successfully!" -ForegroundColor Green
-    Write-Host "  - Frontend:      http://localhost:5174/" -ForegroundColor White
-    Write-Host "  - Backend REST:  http://localhost:8082/api" -ForegroundColor White
-    Write-Host "  - PostgreSQL:    localhost:5433 (db: tododb, user: postgres)" -ForegroundColor White
-    Write-Host "===============================================================================" -ForegroundColor Cyan
-    Start-Sleep -Seconds 2
-    Start-Process "http://localhost:5174/"
+if (-not (Test-Path -LiteralPath $envFile)) {
+    if (-not (Test-Path -LiteralPath $template)) { throw 'Missing .env.example' }
+    $content = [System.IO.File]::ReadAllText($template)
+    $content = $content.Replace('CHANGE_ME_TO_A_STRONG_DATABASE_PASSWORD', (Get-RandomSecret))
+    $content = $content.Replace('CHANGE_ME_TO_A_RANDOM_64_CHARACTER_SECRET', (Get-RandomSecret))
+    # The standalone Windows gateway is not used by Docker and must retain its own API key.
+    [System.IO.File]::WriteAllText($envFile, $content, (New-Object System.Text.UTF8Encoding($false)))
+    Write-Host 'Created .env with freshly generated database and JWT credentials.' -ForegroundColor Green
 } else {
-    Write-Host "❌ Failed to start containers via Docker Compose. Check Docker Desktop status." -ForegroundColor Red
+    Write-Host 'Using existing .env without overwriting its secrets.' -ForegroundColor Cyan
 }
+
+$savedEnv = [System.IO.File]::ReadAllText($envFile)
+if ($savedEnv -match '(?m)^\s*(?:DB_PASSWORD|JWT_SECRET)\s*=\s*CHANGE_ME') {
+    throw 'Update DB_PASSWORD and JWT_SECRET in your existing .env. Never deploy placeholder credentials.'
+}
+
+if (-not (Get-Command docker -ErrorAction SilentlyContinue)) {
+    throw 'Docker Desktop is required. Install and launch Docker Desktop first.'
+}
+docker compose config --quiet
+if ($LASTEXITCODE -ne 0) { throw 'Docker Compose config validation failed.' }
+Write-Host 'Starting PostgreSQL, Spring Boot, Nginx and private Ollama / Qwen3...' -ForegroundColor Cyan
+Write-Host 'On a new machine, Docker downloads the model once into the ollama_data volume.'
+docker compose up --build -d
+if ($LASTEXITCODE -ne 0) { throw 'Docker stack startup failed. Run docker compose logs --tail 100.' }
+docker compose ps
+Write-Host 'Open http://localhost:5174/ after the containers finish starting.' -ForegroundColor Green
+Write-Host 'Check the Qwen pull status with: docker compose logs -f ollama-init'

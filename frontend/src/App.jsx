@@ -1,12 +1,16 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { NotificationProvider, useNotifications } from './context/NotificationContext';
 import { Navbar } from './components/Navbar';
 import { AuthModal } from './components/AuthModal';
 import { StatsOverview } from './components/StatsOverview';
+import { DashboardWelcome } from './components/DashboardWelcome';
 import { QuickAddTask } from './components/QuickAddTask';
 import { TaskFilters } from './components/TaskFilters';
 import { TaskCard } from './components/TaskCard';
+import { TaskListToolbar } from './components/TaskListToolbar';
+import { sortTasks } from './utils/taskSort';
+import { filterTasks } from './utils/taskFilters';
 import { TaskEditModal } from './components/TaskEditModal';
 import { AiStudyPlannerDrawer } from './components/AiStudyPlannerDrawer';
 import { AiDevChatbotDrawer } from './components/AiDevChatbotDrawer';
@@ -25,9 +29,12 @@ function MainApp() {
   // Task & Filter state
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [taskError, setTaskError] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [activeStatus, setActiveStatus] = useState('ALL');
   const [activeCategory, setActiveCategory] = useState('ALL');
   const [searchQuery, setSearchQuery] = useState('');
+  const [sortBy, setSortBy] = useState(() => localStorage.getItem('planify_task_sort') || 'DUE_SOON');
 
   // Modals state
   const [isAiDrawerOpen, setIsAiDrawerOpen] = useState(false);
@@ -37,6 +44,25 @@ function MainApp() {
   const [isPlanModalOpen, setIsPlanModalOpen] = useState(false);
   const [editingTask, setEditingTask] = useState(null);
   const [toastMessage, setToastMessage] = useState('');
+
+  useEffect(() => {
+    localStorage.setItem('planify_task_sort', sortBy);
+  }, [sortBy]);
+
+  // Keyboard shortcut: N focuses the new-task field when not typing elsewhere.
+  useEffect(() => {
+    const onKeyDown = (event) => {
+      const target = event.target;
+      if (event.key.toLowerCase() !== 'n' || event.ctrlKey || event.altKey || event.metaKey || event.repeat ||
+          target?.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target?.tagName)) return;
+      if (isAuthenticated && !isAiDrawerOpen && !isDevChatbotOpen && !isPlanModalOpen && !editingTask) {
+        document.getElementById('quick-add-title')?.focus();
+        event.preventDefault();
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [isAuthenticated, isAiDrawerOpen, isDevChatbotOpen, isPlanModalOpen, editingTask]);
 
   // Fetch AI model gateway health
   useEffect(() => {
@@ -68,6 +94,12 @@ function MainApp() {
     setTimeout(() => setToastMessage(''), 3500);
   };
 
+  // Avoid network requests on every keystroke.
+  useEffect(() => {
+    const timeout = window.setTimeout(() => setDebouncedSearch(searchQuery), 250);
+    return () => window.clearTimeout(timeout);
+  }, [searchQuery]);
+
   // Fetch tasks
   const loadTasks = useCallback(async () => {
     if (!isAuthenticated) {
@@ -75,19 +107,17 @@ function MainApp() {
       return;
     }
     setLoading(true);
+    setTaskError('');
     try {
-      const data = await taskService.getTasks({
-        status: activeStatus,
-        category: activeCategory,
-        search: searchQuery,
-      });
+      const data = await taskService.getTasks();
       setTasks(data || []);
     } catch (err) {
       console.error('Failed to load tasks:', err);
+      setTaskError('We could not load your tasks. Check your connection and try again.');
     } finally {
       setLoading(false);
     }
-  }, [isAuthenticated, activeStatus, activeCategory, searchQuery]);
+  }, [isAuthenticated]);
 
   useEffect(() => {
     loadTasks();
@@ -99,10 +129,15 @@ function MainApp() {
       openAuthModal('login');
       return;
     }
-    const created = await taskService.createTask(taskData);
-    setTasks((prev) => [created, ...prev]);
-    showToast('Task created successfully');
-    refreshReminders();
+    try {
+      const created = await taskService.createTask(taskData);
+      setTasks((prev) => [created, ...prev]);
+      showToast('Task created successfully');
+      refreshReminders();
+    } catch (err) {
+      showToast(err.message || 'Could not create task');
+      throw err;
+    }
   };
 
   const handleToggleStatus = async (taskId, newStatus) => {
@@ -113,17 +148,24 @@ function MainApp() {
       refreshReminders();
     } catch (err) {
       console.error('Failed to update status:', err);
+      showToast('Could not update task. Try again.');
     }
   };
 
   const handleSaveTaskEdit = async (taskId, updateData) => {
-    const updated = await taskService.updateTask(taskId, updateData);
-    setTasks((prev) => prev.map((t) => (t.id === taskId ? updated : t)));
-    showToast('Task updated');
-    refreshReminders();
+    try {
+      const updated = await taskService.updateTask(taskId, updateData);
+      setTasks((prev) => prev.map((t) => (t.id === taskId ? updated : t)));
+      showToast('Task updated');
+      refreshReminders();
+    } catch (err) {
+      showToast(err.message || 'Could not save changes');
+      throw err;
+    }
   };
 
   const handleDeleteTask = async (taskId) => {
+    if (!window.confirm('Delete this task? This action cannot be undone.')) return;
     try {
       await taskService.deleteTask(taskId);
       setTasks((prev) => prev.filter((t) => t.id !== taskId));
@@ -131,6 +173,7 @@ function MainApp() {
       refreshReminders();
     } catch (err) {
       console.error('Failed to delete task:', err);
+      showToast('Could not delete task. Try again.');
     }
   };
 
@@ -155,6 +198,12 @@ function MainApp() {
     refreshReminders();
   };
 
+  const visibleTasks = useMemo(
+    () => filterTasks(tasks, { status: activeStatus, category: activeCategory, search: debouncedSearch }),
+    [tasks, activeStatus, activeCategory, debouncedSearch]
+  );
+  const sortedTasks = useMemo(() => sortTasks(visibleTasks, sortBy), [visibleTasks, sortBy]);
+
   // Counts for filters
   const counts = {
     all: tasks.length,
@@ -166,8 +215,8 @@ function MainApp() {
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       <Navbar
-        onOpenAiPlanner={() => setIsAiDrawerOpen(true)}
-        onOpenDevChatbot={() => setIsDevChatbotOpen(true)}
+        onOpenAiPlanner={() => isAuthenticated ? setIsAiDrawerOpen(true) : openAuthModal('login')}
+        onOpenDevChatbot={() => isAuthenticated ? setIsDevChatbotOpen(true) : openAuthModal('login')}
         modelStatus={modelStatus}
         theme={theme}
         onToggleTheme={toggleTheme}
@@ -247,13 +296,13 @@ function MainApp() {
             }} />
             <div style={{ maxWidth: '640px' }}>
               <span className="tag-badge prio-urgent" style={{ marginBottom: '0.65rem' }}>
-                CREATIVE SUITE EDITION
+                YOUR PERSONAL PRODUCTIVITY SPACE
               </span>
               <h1 style={{ fontSize: '1.75rem', fontWeight: 800, letterSpacing: '-0.02em', marginBottom: '0.4rem' }}>
-                High-Velocity Daily Planning & AI Study Roadmaps
+                A calmer way to plan your day and learn faster
               </h1>
               <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '1.25rem', lineHeight: 1.5 }}>
-                Master tasks with configurable recurring reminders, user data isolation, and instant AI curriculum breakdowns.
+                Organize tasks, stay focused, and build a study plan with your private Qwen AI assistant. Everything important, in one simple workspace.
               </p>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
                 <button
@@ -261,28 +310,48 @@ function MainApp() {
                   className="btn-primary"
                   style={{ padding: '0.65rem 1.25rem' }}
                 >
-                  <span>Get Started (Sign Up)</span>
+                  <span>Create free account</span>
                 </button>
                 <button
                   onClick={() => openAuthModal('login')}
                   className="btn-secondary"
                   style={{ padding: '0.65rem 1.25rem' }}
                 >
-                  <span>Sign In with Demo</span>
+                  <span>Sign In</span>
                 </button>
                 <button
-                  onClick={() => setIsAiDrawerOpen(true)}
+                  onClick={() => isAuthenticated ? setIsAiDrawerOpen(true) : openAuthModal('login')}
                   className="btn-ghost"
                   style={{ color: 'var(--adobe-red)', fontWeight: 600 }}
                 >
                   <Sparkles size={16} />
-                  <span>Preview AI Study Planner</span>
+                  <span>Explore AI planning after sign in</span>
                 </button>
               </div>
             </div>
           </div>
         )}
 
+        {isAuthenticated && (
+          <DashboardWelcome
+            user={user}
+            tasks={tasks}
+            modelStatus={modelStatus}
+            onOpenDevChatbot={() => isAuthenticated ? setIsDevChatbotOpen(true) : openAuthModal('login')}
+            onOpenPlanner={() => isAuthenticated ? setIsAiDrawerOpen(true) : openAuthModal('login')}
+          />
+        )}
+
+        {/* A visitor sees a useful landing state rather than a fake zero-task dashboard. */}
+        {!isAuthenticated && (
+          <div className="guest-feature-grid" aria-label="What you can do with Planify">
+            <div className="guest-feature-card"><CheckCircle2 size={24} aria-hidden="true" /><h2>Stay organized</h2><p>Keep daily tasks, priorities, and deadlines together.</p></div>
+            <div className="guest-feature-card"><Sparkles size={24} aria-hidden="true" /><h2>Learn with a plan</h2><p>Turn study goals into manageable daily actions.</p></div>
+            <div className="guest-feature-card"><Bot size={24} aria-hidden="true" /><h2>Get AI guidance</h2><p>Ask Qwen coding questions and save useful exercises.</p></div>
+          </div>
+        )}
+        {isAuthenticated && (
+          <>
         {/* Dashboard Overview */}
         <StatsOverview tasks={tasks} />
 
@@ -300,7 +369,15 @@ function MainApp() {
           counts={counts}
         />
 
+        <TaskListToolbar count={visibleTasks.length} sortBy={sortBy} onSortChange={setSortBy} />
+
         {/* Task List Section */}
+        {taskError && (
+          <div role="alert" className="task-error">
+            <span>{taskError}</span>
+            <button type="button" className="btn-secondary" onClick={loadTasks}>Retry</button>
+          </div>
+        )}
         {loading ? (
           <div style={{ padding: '3rem 0', textAlign: 'center', color: 'var(--text-secondary)' }}>
             <div style={{
@@ -314,7 +391,7 @@ function MainApp() {
             }} />
             <p style={{ fontSize: '0.85rem' }}>Syncing tasks...</p>
           </div>
-        ) : tasks.length === 0 ? (
+        ) : !taskError && visibleTasks.length === 0 ? (
           <div style={{
             padding: '4rem 1.5rem',
             textAlign: 'center',
@@ -333,7 +410,7 @@ function MainApp() {
             </p>
             <div style={{ display: 'flex', justifyContent: 'center', gap: '0.75rem' }}>
               {isAuthenticated ? (
-                <button onClick={() => setIsAiDrawerOpen(true)} className="btn-primary">
+                <button onClick={() => isAuthenticated ? setIsAiDrawerOpen(true) : openAuthModal('login')} className="btn-primary">
                   <Sparkles size={16} />
                   <span>Generate AI Study Plan</span>
                 </button>
@@ -346,7 +423,7 @@ function MainApp() {
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
-            {tasks.map((task) => (
+            {sortedTasks.map((task) => (
               <TaskCard
                 key={task.id}
                 task={task}
@@ -356,6 +433,8 @@ function MainApp() {
               />
             ))}
           </div>
+        )}
+          </>
         )}
       </main>
 
@@ -379,15 +458,17 @@ function MainApp() {
         onConfirmPlan={handleConfirmPlan}
       />
       <AiDevChatbotDrawer
+        key={user?.id || user?.username || 'guest'}
         isOpen={isDevChatbotOpen}
         onClose={() => setIsDevChatbotOpen(false)}
         onAddTask={handleAddTask}
       />
 
-      {/* Floating AI Dev Assistant Trigger */}
-      <button
-        onClick={() => setIsDevChatbotOpen(true)}
-        className="btn-primary"
+      {/* Keep the assistant discoverable without covering the visitor landing page. */}
+      {isAuthenticated && <button
+        onClick={() => isAuthenticated ? setIsDevChatbotOpen(true) : openAuthModal('login')}
+        className="btn-primary assistant-fab"
+        aria-label="Open Qwen AI assistant"
         style={{
           position: 'fixed',
           bottom: '24px',
@@ -407,7 +488,7 @@ function MainApp() {
         title="Open Dev & Study AI Assistant (Qwen 3)"
       >
         <Bot size={18} />
-        <span>Ask Qwen 3 AI</span>
+        <span>Ask Qwen AI</span>
         <span style={{
           width: '7px',
           height: '7px',
@@ -415,7 +496,7 @@ function MainApp() {
           backgroundColor: modelStatus?.connected ? '#22C55E' : '#F59E0B',
           boxShadow: modelStatus?.connected ? '0 0 6px #22C55E' : 'none',
         }} />
-      </button>
+      </button>}
     </div>
   );
 }

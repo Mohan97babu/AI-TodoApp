@@ -1,0 +1,12 @@
+# Optional NVIDIA GPU acceleration. Requires GPU passthrough, drivers and
+# NVIDIA Container Toolkit / compatible Docker Desktop GPU setup.
+# Start: docker compose -f docker-compose.yml -f docker-compose.gpu.yml up --build -d
+services:
+  ollama:
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]

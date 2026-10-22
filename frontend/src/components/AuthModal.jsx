@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { X, Lock, User, Mail, Sparkles, AlertCircle } from 'lucide-react';
+import { X, Lock, User, Mail, AlertCircle } from 'lucide-react';
 
 export function AuthModal() {
   const { isAuthModalOpen, closeAuthModal, authMode, setAuthMode, login, register } = useAuth();
@@ -32,13 +32,6 @@ export function AuthModal() {
     }
   };
 
-  const fillDemo = () => {
-    setUsername('creative_designer');
-    setEmail('designer@adobe.creative');
-    setPassword('AdobeCreative2026!');
-    setFullName('Adobe Creative Specialist');
-  };
-
   return (
     <div style={{
       position: 'fixed',
@@ -51,7 +44,7 @@ export function AuthModal() {
       zIndex: 100,
       padding: '1rem'
     }}>
-      <div style={{
+      <div role="dialog" aria-modal="true" aria-label="Planify account" style={{
         backgroundColor: 'var(--bg-surface)',
         border: '1px solid var(--border-subtle)',
         borderRadius: 'var(--radius-xl)',
@@ -85,10 +78,10 @@ export function AuthModal() {
               P
             </div>
             <h2 style={{ fontSize: '1.1rem', fontWeight: 700 }}>
-              {authMode === 'login' ? 'Sign In to Planify' : 'Create Creative ID'}
+              {authMode === 'login' ? 'Sign In to Planify' : 'Create account'}
             </h2>
           </div>
-          <button onClick={closeAuthModal} className="btn-ghost" style={{ padding: '0.25rem' }}>
+          <button onClick={closeAuthModal} aria-label="Close sign-in dialog" className="btn-ghost" style={{ padding: '0.25rem' }}>
             <X size={18} />
           </button>
         </div>
@@ -149,7 +142,7 @@ export function AuthModal() {
               marginBottom: '1rem'
             }}>
               <AlertCircle size={16} />
-              <span>{error}</span>
+              <span role="alert">{error}</span>
             </div>
           )}
 
@@ -164,6 +157,8 @@ export function AuthModal() {
                   type="text"
                   required
                   placeholder="e.g. Alex Morgan"
+                  aria-label="Full name"
+                  autoComplete="name"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                   style={{
@@ -189,7 +184,9 @@ export function AuthModal() {
               <input
                 type="text"
                 required
-                placeholder="creative_user"
+                placeholder="Your username"
+                aria-label="Username or email"
+                autoComplete="username"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 style={{
@@ -216,6 +213,8 @@ export function AuthModal() {
                   type="email"
                   required
                   placeholder="user@example.com"
+                  aria-label="Email address"
+                  autoComplete="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   style={{
@@ -241,6 +240,8 @@ export function AuthModal() {
               <input
                 type="password"
                 required
+                aria-label="Password"
+                autoComplete={authMode === 'login' ? 'current-password' : 'new-password'}
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -263,17 +264,7 @@ export function AuthModal() {
             className="btn-primary"
             style={{ width: '100%', padding: '0.75rem', marginBottom: '0.75rem' }}
           >
-            {loading ? 'Authenticating...' : authMode === 'login' ? 'Sign In to Workspace' : 'Create Creative ID'}
-          </button>
-
-          <button
-            type="button"
-            onClick={fillDemo}
-            className="btn-secondary"
-            style={{ width: '100%', fontSize: '0.8rem', padding: '0.5rem' }}
-          >
-            <Sparkles size={14} color="var(--adobe-red)" />
-            <span>Auto-Fill Demo Credentials</span>
+            {loading ? 'Authenticating...' : authMode === 'login' ? 'Sign In to Workspace' : 'Create account'}
           </button>
         </form>
       </div>

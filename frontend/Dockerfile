@@ -1,15 +1,14 @@
 FROM node:22-alpine AS build
 WORKDIR /app
 COPY package*.json ./
-RUN npm install
+RUN npm ci --no-audit --no-fund
 COPY . .
 RUN npm run build
 
-FROM node:22-alpine
-WORKDIR /app
-RUN npm install -g vite
-COPY package*.json ./
-RUN npm install --omit=dev
-COPY --from=build /app/dist ./dist
-EXPOSE 5174
-CMD ["npx", "vite", "preview", "--host", "0.0.0.0", "--port", "5174"]
+FROM nginx:stable-alpine
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY --from=build /app/dist /usr/share/nginx/html
+EXPOSE 80
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s \
+  CMD wget -q -O /dev/null http://127.0.0.1/ || exit 1
+CMD ["nginx", "-g", "daemon off;"]

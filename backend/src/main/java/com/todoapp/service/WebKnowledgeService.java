@@ -205,7 +205,17 @@ public class WebKnowledgeService {
      */
     public Map<String, Object> retrieveKnowledge(String query, Map<String, Boolean> sourcesEnabled) {
         if (query == null) query = "";
-        String cleanQuery = query.toLowerCase().trim();
+        String cleanQuery = query.toLowerCase(Locale.ROOT).trim();
+        if (cleanQuery.length() > 200) cleanQuery = cleanQuery.substring(0, 200);
+        if (cleanQuery.isEmpty()) {
+            return Map.of(
+                    "contextSnippet", "",
+                    "sources", List.of(),
+                    "matchedTopicCount", 0,
+                    "knowledgeOrigin", "curated-local",
+                    "liveContentFetched", false
+            );
+        }
 
         boolean enableGfg = sourcesEnabled == null || sourcesEnabled.getOrDefault("geeksforgeeks", true);
         boolean enableW3s = sourcesEnabled == null || sourcesEnabled.getOrDefault("w3schools", true);
@@ -215,17 +225,18 @@ public class WebKnowledgeService {
         for (KnowledgeTopic t : topics) {
             boolean matched = false;
             for (String kw : t.getKeywords()) {
-                if (cleanQuery.contains(kw) || kw.contains(cleanQuery)) {
+                if (!cleanQuery.isEmpty() && (cleanQuery.contains(kw) || (cleanQuery.length() >= 5 && kw.contains(cleanQuery)))) {
                     matched = true;
                     break;
                 }
             }
             if (matched) {
                 matchedTopics.add(t);
+                if (matchedTopics.size() >= 3) break;
             }
         }
 
-        // Prepare verified sources list
+        // Suggested reference links from a curated local topic catalog; not live-fetched pages.
         List<Map<String, String>> sources = new ArrayList<>();
 
         StringBuilder contextBuilder = new StringBuilder();
@@ -261,13 +272,15 @@ public class WebKnowledgeService {
             if (enableTpoint) {
                 sources.add(Map.of("site", "TPointTech", "title", "Search '" + query + "' on TPointTech", "url", "https://www.tpointtech.com/search?q=" + encodedQuery));
             }
-            contextBuilder.append("Query relates to software engineering, computer science, and practical development best practices.\n");
+            // No fabricated summary when the local catalog has no matching topic.
         }
 
         Map<String, Object> result = new HashMap<>();
         result.put("contextSnippet", contextBuilder.toString());
         result.put("sources", sources);
         result.put("matchedTopicCount", matchedTopics.size());
+        result.put("knowledgeOrigin", "curated-local");
+        result.put("liveContentFetched", false);
         return result;
     }
 

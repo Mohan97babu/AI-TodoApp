@@ -11,12 +11,14 @@ export function QuickAddTask({ onAddTask }) {
   const [recurrenceInterval, setRecurrenceInterval] = useState('NONE');
   const [reminderMinutesBefore, setReminderMinutesBefore] = useState(15);
   const [submitting, setSubmitting] = useState(false);
+  const [formError, setFormError] = useState('');
 
   const handleSubmit = async (e) => {
     e?.preventDefault();
     if (!title.trim() || submitting) return;
 
     setSubmitting(true);
+    setFormError('');
     try {
       let isoDueDate = null;
       if (dueDate) {
@@ -41,6 +43,7 @@ export function QuickAddTask({ onAddTask }) {
       setRecurrenceInterval('NONE');
     } catch (err) {
       console.error('Failed to create task:', err);
+      setFormError(err.message || 'Could not create task. Please try again.');
     } finally {
       setSubmitting(false);
     }
@@ -57,6 +60,7 @@ export function QuickAddTask({ onAddTask }) {
       transition: 'var(--transition)',
     }}>
       <form onSubmit={handleSubmit}>
+        {formError && <p role="alert" style={{ color: 'var(--color-urgent)', fontSize: '.85rem', marginBottom: '.5rem' }}>{formError}</p>}
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
           <div style={{
             width: '24px',
@@ -72,8 +76,11 @@ export function QuickAddTask({ onAddTask }) {
           </div>
 
           <input
+            id="quick-add-title"
             type="text"
             placeholder="Add a new task... (press Enter or configure below)"
+            aria-label="New task title"
+            maxLength={255}
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             onFocus={() => setShowOptions(true)}
@@ -90,6 +97,8 @@ export function QuickAddTask({ onAddTask }) {
           <button
             type="button"
             onClick={() => setShowOptions(!showOptions)}
+            aria-expanded={showOptions}
+            aria-label="Task options"
             className="btn-ghost"
             style={{ fontSize: '0.8rem', padding: '0.35rem 0.6rem' }}
           >

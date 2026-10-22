@@ -2,14 +2,15 @@ import React from 'react';
 import { CheckCircle2, Clock, Calendar, Flame, BookOpen } from 'lucide-react';
 
 export function StatsOverview({ tasks = [] }) {
-  const total = tasks.length;
-  const completed = tasks.filter((t) => t.status === 'COMPLETED').length;
-  const pending = tasks.filter((t) => t.status !== 'COMPLETED').length;
+  const activeTasks = tasks.filter((t) => t.status !== 'CANCELLED');
+  const total = activeTasks.length;
+  const completed = activeTasks.filter((t) => t.status === 'COMPLETED').length;
+  const pending = activeTasks.filter((t) => t.status !== 'COMPLETED').length;
   const percentage = total === 0 ? 0 : Math.round((completed / total) * 100);
 
   const now = new Date();
   const todayCount = tasks.filter((t) => {
-    if (!t.dueDate) return false;
+    if (!t.dueDate || t.status === 'COMPLETED' || t.status === 'CANCELLED') return false;
     const d = new Date(t.dueDate);
     return d.toDateString() === now.toDateString();
   }).length;
@@ -35,7 +36,7 @@ export function StatsOverview({ tasks = [] }) {
         boxShadow: 'var(--shadow-sm)'
       }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-          <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-secondary)' }}>DAILY MOMENTUM</span>
+          <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-secondary)' }}>TASK COMPLETION</span>
           <span style={{ fontSize: '0.9rem', fontWeight: 800, color: 'var(--adobe-red)' }}>{percentage}%</span>
         </div>
         <div style={{
@@ -141,7 +142,7 @@ export function StatsOverview({ tasks = [] }) {
           <BookOpen size={22} />
         </div>
         <div>
-          <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)' }}>STUDY MODULES</span>
+          <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)' }}>STUDY TASKS</span>
           <h3 style={{ fontSize: '1.4rem', fontWeight: 800 }}>{studyTasksCount}</h3>
         </div>
       </div>

@@ -21,3 +21,10 @@ venv/
 .venv/
 __pycache__/
 *.db
+
+# Local configuration / credentials
+.env
+.env.*
+!.env.example
+*.pem
+*.key

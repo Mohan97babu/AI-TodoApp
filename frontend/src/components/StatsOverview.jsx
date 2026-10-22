@@ -1,5 +1,5 @@
 import React from 'react';
-import { CalendarDays, Clock3, CheckCircle2 } from 'lucide-react';
+import { CalendarDays, Clock, CheckCircle2 } from 'lucide-react';
 
 /** Accurate counts only: no demo data and no invented comparisons. */
 export function StatsOverview({ tasks = [] }) {

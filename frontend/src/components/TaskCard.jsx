@@ -51,6 +51,7 @@ export function TaskCard({ task, onToggleStatus, onEdit, onDelete }) {
 
   return (
     <div
+      className="workspace-task-row"
       style={{
         backgroundColor: 'var(--bg-surface)',
         border: '1px solid var(--border-subtle)',
